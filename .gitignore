@@ -3,3 +3,5 @@
 /tests/.junit.xml
 /template-pp/
 /.env
+__pycache__/
+*.pyc

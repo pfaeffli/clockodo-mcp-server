@@ -1,30 +1,10 @@
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
-from clockodo_mcp.server import create_server
-from clockodo_mcp.tools.hr_tools import (
-    check_overtime_compliance,
-    check_vacation_compliance,
-    get_hr_summary,
-)
+from clockodo_mcp.services.hr_service import HRService
 
 
-def test_server_list_users_tool_calls_client():
+def test_hr_service_check_overtime_compliance():
     mock_client = Mock()
-    mock_client.list_users.return_value = {"users": [{"id": 1}]}
-
-    server = create_server(client=mock_client)
-
-    # call the tool
-    result = server.tools["list_users"]()
-
-    mock_client.list_users.assert_called_once_with()
-    assert result["users"][0]["id"] == 1
-
-
-@patch("clockodo_mcp.tools.hr_tools.ClockodoClient")
-def test_check_overtime_compliance_returns_violations(mock_client_class):
-    mock_client = Mock()
-    mock_client_class.from_env.return_value = mock_client
     mock_client.get_user_reports.return_value = {
         "userreports": [
             {
@@ -39,7 +19,8 @@ def test_check_overtime_compliance_returns_violations(mock_client_class):
         ]
     }
 
-    result = check_overtime_compliance(year=2024, max_overtime_hours=80)
+    service = HRService(mock_client)
+    result = service.check_overtime_compliance(year=2024, max_overtime_hours=80)
 
     mock_client.get_user_reports.assert_called_once_with(year=2024)
     assert result["year"] == 2024
@@ -49,10 +30,8 @@ def test_check_overtime_compliance_returns_violations(mock_client_class):
     assert result["violations"][0]["overtime_hours"] == 100.0
 
 
-@patch("clockodo_mcp.tools.hr_tools.ClockodoClient")
-def test_check_vacation_compliance_returns_violations(mock_client_class):
+def test_hr_service_check_vacation_compliance():
     mock_client = Mock()
-    mock_client_class.from_env.return_value = mock_client
     mock_client.get_user_reports.return_value = {
         "userreports": [
             {
@@ -68,7 +47,8 @@ def test_check_vacation_compliance_returns_violations(mock_client_class):
         ]
     }
 
-    result = check_vacation_compliance(year=2024, min_vacation_days=10)
+    service = HRService(mock_client)
+    result = service.check_vacation_compliance(year=2024, min_vacation_days=10)
 
     mock_client.get_user_reports.assert_called_once_with(year=2024)
     assert result["year"] == 2024
@@ -77,10 +57,8 @@ def test_check_vacation_compliance_returns_violations(mock_client_class):
     assert result["violations"][0]["user_name"] == "Bob"
 
 
-@patch("clockodo_mcp.tools.hr_tools.ClockodoClient")
-def test_get_hr_summary_returns_complete_report(mock_client_class):
+def test_hr_service_get_hr_summary():
     mock_client = Mock()
-    mock_client_class.from_env.return_value = mock_client
     mock_client.get_user_reports.return_value = {
         "userreports": [
             {
@@ -106,7 +84,8 @@ def test_get_hr_summary_returns_complete_report(mock_client_class):
         ]
     }
 
-    result = get_hr_summary(year=2024)
+    service = HRService(mock_client)
+    result = service.get_hr_summary(year=2024)
 
     mock_client.get_user_reports.assert_called_once_with(year=2024)
     assert result["year"] == 2024

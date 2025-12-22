@@ -47,20 +47,49 @@ class ClockodoClient:
             headers["User-Agent"] = "clockodo-mcp/unknown"
         return headers
 
-    # Endpoints
-    def list_users(self) -> dict:
-        url = f"{self.base_url}users"
-        resp = httpx.get(url, headers=self.default_headers, timeout=30.0)
+    def _request(
+        self,
+        method: str,
+        endpoint: str,
+        params: dict | None = None,
+        json_data: dict | None = None,
+        timeout: float = 30.0,
+    ) -> dict:
+        """
+        Make HTTP request to Clockodo API.
+
+        Args:
+            method: HTTP method (GET, POST, PUT, DELETE)
+            endpoint: API endpoint path (e.g., "users", "entries")
+            params: Query parameters
+            json_data: JSON body for POST/PUT requests
+            timeout: Request timeout in seconds
+
+        Returns:
+            JSON response as dictionary
+        """
+        url = f"{self.base_url}{endpoint}"
+        resp = httpx.request(
+            method=method,
+            url=url,
+            headers=self.default_headers,
+            params=params,
+            json=json_data,
+            timeout=timeout,
+        )
         resp.raise_for_status()
         return resp.json()
+
+    # User Endpoints
+    def list_users(self) -> dict:
+        """List all users."""
+        return self._request("GET", "users")
 
     def get_user_reports(
         self, year: int, user_id: int | None = None, type_level: int = 0
     ) -> dict:
-        url = f"{self.base_url}userreports"
+        """Get user reports for a specific year."""
         params = {"year": year, "type": type_level}
         if user_id is not None:
             params["users_id"] = user_id
-        resp = httpx.get(url, headers=self.default_headers, params=params, timeout=30.0)
-        resp.raise_for_status()
-        return resp.json()
+        return self._request("GET", "userreports", params=params)
