@@ -17,6 +17,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: clockodo-mcp:latest
     environment:
       CLOCKODO_API_USER: ${CLOCKODO_API_USER}
       CLOCKODO_API_KEY: ${CLOCKODO_API_KEY}
