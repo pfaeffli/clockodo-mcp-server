@@ -1,0 +1,30 @@
+# syntax=docker/dockerfile:1
+# Development image to use as a Python interpreter in IDEs/containers
+FROM python:3.13-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Create non-root user matching typical host UID/GID (override at build with --build-arg)
+ARG UID=1000
+ARG GID=1000
+RUN groupadd -g ${GID} app && \
+    useradd -m -u ${UID} -g ${GID} app
+
+WORKDIR /workspace
+
+# Install project in editable mode with dev dependencies
+# Copy only what's required to resolve deps and perform editable install
+COPY pyproject.toml /workspace/pyproject.toml
+COPY src /workspace/src
+
+RUN pip install --upgrade pip && \
+    pip install -e .[dev]
+
+USER app
+
+# When used as an interpreter, no long-running process is needed
+# Keep a quick, no-op command as default
+CMD ["python", "-c", "print('clockodo-mcp dev interpreter ready')"]

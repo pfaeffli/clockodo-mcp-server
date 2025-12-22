@@ -1,0 +1,52 @@
+services:
+  type:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+    working_dir: /app
+    environment:
+      - PYTHONPATH=/app/src
+    command: mypy /app/src/clockodo_mcp /app/tests
+
+  lint:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+    working_dir: /app
+    environment:
+      - PYTHONPATH=/app/src
+    command: >
+      pylint --rcfile=/app/deps/jaywalker-utils/common/config/pylintrc
+      --ignore-paths=.*/tests/.* /app/src/clockodo_mcp /app/tests
+
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+    working_dir: /app
+    environment:
+      - PYTHONPATH=/app/src
+    env_file: .env.example
+    command: >
+      pytest --cov-report=term-missing
+      --cov-report=xml:/app/tests/.coverage.xml
+      --cov-config=/app/setup.cfg
+      --cov=clockodo_mcp
+      --junitxml=/app/tests/.junit.xml /app/tests
+
+  style-check:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+    working_dir: /app
+    environment:
+      - PYTHONPATH=/app/src
+    command: black --check /app/src/clockodo_mcp /app/tests

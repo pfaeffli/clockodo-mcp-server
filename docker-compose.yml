@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      args:
+        UID: ${UID-1000}
+        GID: ${GID-1000}
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace:cached
+    command: ["python", "-c", "print('clockodo-mcp dev interpreter ready')"]
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      CLOCKODO_API_USER: ${CLOCKODO_API_USER}
+      CLOCKODO_API_KEY: ${CLOCKODO_API_KEY}
+      CLOCKODO_USER_AGENT: ${CLOCKODO_USER_AGENT-clockodo-mcp/0.1.0}
+      CLOCKODO_BASE_URL: ${CLOCKODO_BASE_URL-https://my.clockodo.com/api/v2/}
+    # Example of how an MCP stdio server might be used by a host tool via stdin/stdout.
+    # Here we just run the entrypoint which prints a health check for now.
+    command: ["clockodo-mcp"]

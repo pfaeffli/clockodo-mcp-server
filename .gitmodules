@@ -1,0 +1,3 @@
+[submodule "deps/jaywalker-utils"]
+	path = deps/jaywalker-utils
+	url = git@gitlab.com:jaywalkerdigital/jwd/jaywalker-utils.git

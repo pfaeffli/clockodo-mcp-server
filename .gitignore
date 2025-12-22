@@ -1,0 +1,5 @@
+/.coverage
+/tests/.coverage.xml
+/tests/.junit.xml
+/template-pp/
+/.env
