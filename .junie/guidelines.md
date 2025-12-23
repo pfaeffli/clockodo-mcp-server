@@ -8,3 +8,4 @@
 ## Project-specific
 
 1. Use black formatting
+2. Add manual api tests per api implementation to the manual-test notebook.

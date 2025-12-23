@@ -5,7 +5,7 @@ from mcp.server.fastmcp import FastMCP
 
 from .client import ClockodoClient
 from .config import FeatureGroup, ServerConfig
-from .tools import hr_tools
+from .tools import hr_tools, debug_tools
 
 # Load configuration
 config = ServerConfig.from_env()
@@ -28,6 +28,22 @@ def list_users() -> dict:
     """List all users from Clockodo API."""
     client = ClockodoClient.from_env()
     return client.list_users()
+
+
+@mcp.tool()
+def get_raw_user_reports(year: int) -> dict:
+    """
+    Get raw user reports from Clockodo API (for debugging).
+
+    Shows the actual data returned by Clockodo's /api/userreports endpoint.
+
+    Args:
+        year: Year to fetch (e.g., 2024, 2025)
+
+    Returns:
+        Raw API response with all user report data
+    """
+    return debug_tools.get_raw_user_reports(year)
 
 
 # Conditional tool registration based on configuration

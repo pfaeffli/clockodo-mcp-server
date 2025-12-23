@@ -88,8 +88,25 @@ class ClockodoClient:
     def get_user_reports(
         self, year: int, user_id: int | None = None, type_level: int = 0
     ) -> dict:
-        """Get user reports for a specific year."""
+        """
+        Get user reports for a specific year.
+
+        Note: userreports is a legacy v1 endpoint, so we need to use /api/ instead of /api/v2/
+        """
         params = {"year": year, "type": type_level}
         if user_id is not None:
             params["users_id"] = user_id
-        return self._request("GET", "userreports", params=params)
+
+        # userreports uses the v1 API path (/api/userreports instead of /api/v2/userreports)
+        v1_base_url = self.base_url.replace("/api/v2/", "/api/")
+        url = f"{v1_base_url}userreports"
+
+        resp = httpx.request(
+            method="GET",
+            url=url,
+            headers=self.default_headers,
+            params=params,
+            timeout=30.0,
+        )
+        resp.raise_for_status()
+        return resp.json()
