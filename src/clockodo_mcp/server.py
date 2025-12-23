@@ -1,4 +1,16 @@
-"""Clockodo MCP Server - Main entry point and tool registration."""
+"""
+Clockodo MCP Server - Main entry point and tool registration.
+
+This module implements the MCP server layer.
+
+Pattern: Server Layer (Layer 1)
+- Only handles MCP tool registration
+- No business logic (delegates to services)
+- No HTTP communication (delegates to client)
+- Uses configuration to enable/disable features
+
+Architecture: Server → Service → Client
+"""
 from __future__ import annotations
 
 from mcp.server.fastmcp import FastMCP
@@ -7,10 +19,11 @@ from .client import ClockodoClient
 from .config import FeatureGroup, ServerConfig
 from .tools import hr_tools, debug_tools
 
-# Load configuration
+# Pattern #2: Configuration Management
+# Load configuration from environment variables with safe defaults
 config = ServerConfig.from_env()
 
-# Create MCP server
+# Create MCP server instance
 mcp = FastMCP("clockodo")
 
 
@@ -46,9 +59,19 @@ def get_raw_user_reports(year: int) -> dict:
     return debug_tools.get_raw_user_reports(year)
 
 
-# Conditional tool registration based on configuration
+# ==============================================
+# Conditional Tool Registration
+# ==============================================
+
 def register_tools():
-    """Register MCP tools based on enabled features."""
+    """
+    Register MCP tools based on enabled features.
+
+    Follows Pattern #10 (Environment-Based Behavior):
+    - Feature flags control which tools are registered
+    - No if/else for environments
+    - Configuration over code
+    """
 
     # HR Tools (Read-only)
     if config.is_enabled(FeatureGroup.HR_READONLY):

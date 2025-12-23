@@ -1,4 +1,16 @@
-"""HR compliance service for analyzing employee work data."""
+"""
+HR compliance service for analyzing employee work data.
+
+This module implements the service layer for HR functionality.
+
+Pattern: Service Layer (Layer 2)
+- Contains business logic
+- Orchestrates client calls and data analysis
+- No MCP protocol handling
+- Uses dependency injection
+
+Architecture: Server → Service → Client
+"""
 from __future__ import annotations
 
 from ..client import ClockodoClient
@@ -6,14 +18,26 @@ from ..hr_analyzer import analyze_overtime, analyze_vacation, get_hr_violations
 
 
 class HRService:
-    """Service for HR compliance checking and reporting."""
+    """
+    Service for HR compliance checking and reporting.
+
+    Follows Pattern #3 (Dependency Injection):
+    - Client injected via constructor
+    - Testable by mocking client
+    - Clear dependency graph
+
+    Follows Pattern #4 (Separation of Concerns):
+    - Orchestrates API calls (via client)
+    - Delegates analysis (to hr_analyzer)
+    - Returns structured data
+    """
 
     def __init__(self, client: ClockodoClient):
         """
         Initialize HR service.
 
         Args:
-            client: Clockodo API client
+            client: Clockodo API client for fetching data
         """
         self.client = client
 

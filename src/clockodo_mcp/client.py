@@ -1,3 +1,14 @@
+"""
+Clockodo API Client.
+
+This module provides a thin HTTP client layer for the Clockodo REST API.
+
+Pattern: Pure HTTP client - no business logic
+- Only handles HTTP communication
+- Returns raw API responses
+- Lets errors bubble up via httpx.raise_for_status()
+- Uses dependency injection (constructor parameters)
+"""
 from __future__ import annotations
 
 import os
@@ -10,6 +21,15 @@ DEFAULT_BASE_URL = "https://my.clockodo.com/api/v2/"
 
 @dataclass
 class ClockodoClient:
+    """
+    HTTP client for Clockodo REST API.
+
+    Follows Pattern #3 (Dependency Injection):
+    - All dependencies via constructor
+    - Testable by mocking
+    - No global state
+    """
+
     api_user: str
     api_key: str
     user_agent: str | None = None
@@ -18,6 +38,13 @@ class ClockodoClient:
 
     @classmethod
     def from_env(cls) -> "ClockodoClient":
+        """
+        Create client from environment variables.
+
+        Follows Pattern #2 (Configuration Management):
+        - All config from environment
+        - Safe defaults
+        """
         api_user = os.getenv("CLOCKODO_API_USER", "")
         api_key = os.getenv("CLOCKODO_API_KEY", "")
         user_agent = os.getenv("CLOCKODO_USER_AGENT")
@@ -80,9 +107,17 @@ class ClockodoClient:
         resp.raise_for_status()
         return resp.json()
 
-    # User Endpoints
+    # ==============================================
+    # API Endpoints
+    # ==============================================
+
     def list_users(self) -> dict:
-        """List all users."""
+        """
+        List all users from Clockodo.
+
+        Returns:
+            Dictionary with 'users' key containing list of user objects
+        """
         return self._request("GET", "users")
 
     def get_user_reports(
@@ -91,13 +126,23 @@ class ClockodoClient:
         """
         Get user reports for a specific year.
 
-        Note: userreports is a legacy v1 endpoint, so we need to use /api/ instead of /api/v2/
+        Follows Pattern #5 (API Version Handling):
+        - userreports is a legacy v1 endpoint
+        - Explicitly uses /api/ instead of /api/v2/
+
+        Args:
+            year: Year to fetch (e.g., 2024, 2025)
+            user_id: Optional specific user ID to filter
+            type_level: Report detail level (0=year only, up to 4=detailed)
+
+        Returns:
+            Dictionary with 'userreports' key containing list of report objects
         """
-        params = {"year": year, "type": type_level}
+        params: dict[str, int] = {"year": year, "type": type_level}
         if user_id is not None:
             params["users_id"] = user_id
 
-        # userreports uses the v1 API path (/api/userreports instead of /api/v2/userreports)
+        # userreports is v1 API: /api/userreports not /api/v2/userreports
         v1_base_url = self.base_url.replace("/api/v2/", "/api/")
         url = f"{v1_base_url}userreports"
 

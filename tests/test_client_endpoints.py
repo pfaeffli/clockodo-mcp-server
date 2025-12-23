@@ -31,7 +31,9 @@ def test_list_users_calls_clockodo_and_returns_json(monkeypatch):
 def test_get_user_reports_calls_clockodo_with_year_parameter():
     client = ClockodoClient(api_user="u@example.com", api_key="k", user_agent="ua")
 
-    route = respx.get(f"{DEFAULT_BASE_URL}userreports").mock(
+    # userreports is a v1 endpoint: /api/userreports not /api/v2/userreports
+    v1_url = DEFAULT_BASE_URL.replace("/api/v2/", "/api/")
+    route = respx.get(f"{v1_url}userreports").mock(
         return_value=httpx.Response(
             200,
             json={
@@ -73,7 +75,9 @@ def test_get_user_reports_calls_clockodo_with_year_parameter():
 def test_get_user_reports_with_user_id_parameter():
     client = ClockodoClient(api_user="u@example.com", api_key="k")
 
-    route = respx.get(f"{DEFAULT_BASE_URL}userreports").mock(
+    # userreports is a v1 endpoint: /api/userreports not /api/v2/userreports
+    v1_url = DEFAULT_BASE_URL.replace("/api/v2/", "/api/")
+    route = respx.get(f"{v1_url}userreports").mock(
         return_value=httpx.Response(
             200,
             json={
