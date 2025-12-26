@@ -1,1 +1,10 @@
--r ../deps/jaywalker-utils/requirements/dev.in
+pytest>=8.0
+pytest-cov>=5.0.0
+pytest-mock>=3.0
+respx>=0.21.1
+ruff>=0.6.0
+black>=24.3.0
+mypy>=1.10.0
+pylint>=3.2.0
+pip-tools>=7.4.0
+types-pyyaml
