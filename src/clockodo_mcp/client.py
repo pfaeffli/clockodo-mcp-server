@@ -12,8 +12,11 @@ Pattern: Pure HTTP client - no business logic
 from __future__ import annotations
 
 import os
+import logging
 from dataclasses import dataclass
 import httpx
+
+logger = logging.getLogger(__name__)
 
 
 DEFAULT_BASE_URL = "https://my.clockodo.com/api/v2/"
@@ -50,6 +53,17 @@ class ClockodoClient:
         user_agent = os.getenv("CLOCKODO_USER_AGENT")
         base_url = os.getenv("CLOCKODO_BASE_URL", DEFAULT_BASE_URL)
         external_app_contact = os.getenv("CLOCKODO_EXTERNAL_APP_CONTACT")
+
+        # Log environment variable status (mask sensitive values)
+        logger.info(
+            "ClockodoClient.from_env() - Environment variables: "
+            f"CLOCKODO_API_USER={'SET' if api_user else 'MISSING'}, "
+            f"CLOCKODO_API_KEY={'SET' if api_key else 'MISSING'}, "
+            f"CLOCKODO_USER_AGENT={'SET' if user_agent else 'NOT_SET'}, "
+            f"CLOCKODO_BASE_URL={base_url}, "
+            f"CLOCKODO_EXTERNAL_APP_CONTACT={'SET' if external_app_contact else 'NOT_SET'}"
+        )
+
         return cls(
             api_user=api_user,
             api_key=api_key,
