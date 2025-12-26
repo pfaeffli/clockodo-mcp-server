@@ -1,0 +1,18 @@
+[MESSAGES CONTROL]
+disable=
+    too-few-public-methods,
+    too-many-arguments,
+    too-many-positional-arguments,
+    missing-module-docstring,
+    missing-class-docstring,
+    missing-function-docstring,
+    unused-argument,
+    import-error,
+    duplicate-code,
+    line-too-long
+
+[FORMAT]
+max-line-length=88
+
+[BASIC]
+good-names=i,j,k,ex,_,id

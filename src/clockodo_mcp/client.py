@@ -9,11 +9,13 @@ Pattern: Pure HTTP client - no business logic
 - Lets errors bubble up via httpx.raise_for_status()
 - Uses dependency injection (constructor parameters)
 """
+
 from __future__ import annotations
 
-import os
 import logging
+import os
 from dataclasses import dataclass
+
 import httpx
 
 logger = logging.getLogger(__name__)
@@ -57,11 +59,16 @@ class ClockodoClient:
         # Log environment variable status (mask sensitive values)
         logger.info(
             "ClockodoClient.from_env() - Environment variables: "
-            f"CLOCKODO_API_USER={'SET' if api_user else 'MISSING'}, "
-            f"CLOCKODO_API_KEY={'SET' if api_key else 'MISSING'}, "
-            f"CLOCKODO_USER_AGENT={'SET' if user_agent else 'NOT_SET'}, "
-            f"CLOCKODO_BASE_URL={base_url}, "
-            f"CLOCKODO_EXTERNAL_APP_CONTACT={'SET' if external_app_contact else 'NOT_SET'}"
+            "CLOCKODO_API_USER=%s, "
+            "CLOCKODO_API_KEY=%s, "
+            "CLOCKODO_USER_AGENT=%s, "
+            "CLOCKODO_BASE_URL=%s, "
+            "CLOCKODO_EXTERNAL_APP_CONTACT=%s",
+            "SET" if api_user else "MISSING",
+            "SET" if api_key else "MISSING",
+            "SET" if user_agent else "NOT_SET",
+            base_url,
+            "SET" if external_app_contact else "NOT_SET",
         )
 
         return cls(

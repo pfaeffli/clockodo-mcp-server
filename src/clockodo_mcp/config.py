@@ -1,4 +1,5 @@
 """Configuration for Clockodo MCP Server feature flags and permissions."""
+
 from __future__ import annotations
 
 import os
@@ -63,7 +64,7 @@ class ServerConfig:
                 admin_read=False,
                 admin_edit=False,
             )
-        elif preset == "user":
+        if preset == "user":
             return cls(
                 hr_readonly=True,
                 user_read=True,
@@ -71,7 +72,7 @@ class ServerConfig:
                 admin_read=False,
                 admin_edit=False,
             )
-        elif preset == "admin":
+        if preset == "admin":
             return cls(
                 hr_readonly=True,
                 user_read=True,
@@ -85,7 +86,7 @@ class ServerConfig:
             value = os.getenv(key, "").lower()
             if value in ("true", "1", "yes", "on"):
                 return True
-            elif value in ("false", "0", "no", "off"):
+            if value in ("false", "0", "no", "off"):
                 return False
             return default
 

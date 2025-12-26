@@ -1,5 +1,3 @@
-import pytest
-
 from clockodo_mcp.config import FeatureGroup, ServerConfig
 
 

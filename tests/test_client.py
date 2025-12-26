@@ -1,6 +1,3 @@
-import os
-import pytest
-
 from clockodo_mcp.client import ClockodoClient
 
 

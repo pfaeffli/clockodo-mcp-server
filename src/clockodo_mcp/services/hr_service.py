@@ -11,6 +11,7 @@ Pattern: Service Layer (Layer 2)
 
 Architecture: Server → Service → Client
 """
+
 from __future__ import annotations
 
 from ..client import ClockodoClient
@@ -78,7 +79,10 @@ class HRService:
         }
 
     def check_vacation_compliance(
-        self, year: int, min_vacation_days: float = 10, max_vacation_remaining: float = 20
+        self,
+        year: int,
+        min_vacation_days: float = 10,
+        max_vacation_remaining: float = 20,
     ) -> dict:
         """
         Check which employees have vacation compliance issues.
@@ -148,7 +152,9 @@ class HRService:
         }
 
         all_violations = get_hr_violations(reports, config)
-        employees_with_violations = [v for v in all_violations if len(v["violations"]) > 0]
+        employees_with_violations = [
+            v for v in all_violations if len(v["violations"]) > 0
+        ]
 
         return {
             "year": year,

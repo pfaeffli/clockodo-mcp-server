@@ -1,4 +1,5 @@
 """Tests for conditional server tool registration based on configuration."""
+
 from clockodo_mcp.config import ServerConfig
 from clockodo_mcp.server import create_server
 
@@ -40,7 +41,11 @@ def test_server_with_user_preset_config():
 def test_server_with_admin_preset_config():
     """Test server with admin preset (all features)."""
     config = ServerConfig(
-        hr_readonly=True, user_read=True, user_edit=True, admin_read=True, admin_edit=True
+        hr_readonly=True,
+        user_read=True,
+        user_edit=True,
+        admin_read=True,
+        admin_edit=True,
     )
     server = create_server(test_config=config)
 
@@ -59,7 +64,11 @@ def test_server_with_admin_preset_config():
 def test_server_with_no_features():
     """Test server with all features disabled (only health + list_users)."""
     config = ServerConfig(
-        hr_readonly=False, user_read=False, user_edit=False, admin_read=False, admin_edit=False
+        hr_readonly=False,
+        user_read=False,
+        user_edit=False,
+        admin_read=False,
+        admin_edit=False,
     )
     server = create_server(test_config=config)
 

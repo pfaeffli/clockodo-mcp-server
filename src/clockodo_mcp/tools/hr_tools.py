@@ -1,4 +1,5 @@
 """MCP tools for HR compliance checking."""
+
 from __future__ import annotations
 
 from ..client import ClockodoClient
@@ -37,7 +38,9 @@ def check_vacation_compliance(
     """
     client = ClockodoClient.from_env()
     service = HRService(client)
-    return service.check_vacation_compliance(year, min_vacation_days, max_vacation_remaining)
+    return service.check_vacation_compliance(
+        year, min_vacation_days, max_vacation_remaining
+    )
 
 
 def get_hr_summary(
@@ -60,4 +63,6 @@ def get_hr_summary(
     """
     client = ClockodoClient.from_env()
     service = HRService(client)
-    return service.get_hr_summary(year, max_overtime_hours, min_vacation_days, max_vacation_remaining)
+    return service.get_hr_summary(
+        year, max_overtime_hours, min_vacation_days, max_vacation_remaining
+    )

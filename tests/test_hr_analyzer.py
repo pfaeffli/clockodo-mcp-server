@@ -1,4 +1,8 @@
-from clockodo_mcp.hr_analyzer import analyze_overtime, analyze_vacation, get_hr_violations
+from clockodo_mcp.hr_analyzer import (
+    analyze_overtime,
+    analyze_vacation,
+    get_hr_violations,
+)
 
 
 def test_analyze_overtime_no_violation_when_under_threshold():
@@ -57,7 +61,7 @@ def test_analyze_vacation_no_violation_when_within_range():
         "holidays_carry": 2.5,
         "sum_absence": {
             "regular_holidays": 15.0,
-        }
+        },
     }
 
     result = analyze_vacation(report, min_days_used=10, max_days_remaining=15)
@@ -76,7 +80,7 @@ def test_analyze_vacation_violation_when_too_few_used():
         "holidays_carry": 0,
         "sum_absence": {
             "regular_holidays": 5.0,
-        }
+        },
     }
 
     result = analyze_vacation(report, min_days_used=10, max_days_remaining=20)
@@ -96,7 +100,7 @@ def test_analyze_vacation_violation_when_too_many_remaining():
         "holidays_carry": 5,
         "sum_absence": {
             "regular_holidays": 8.0,
-        }
+        },
     }
 
     result = analyze_vacation(report, min_days_used=10, max_days_remaining=15)
@@ -133,7 +137,7 @@ def test_get_hr_violations_returns_all_violations():
                 "overtime_carryover": 0,
                 "holidays_quota": 20,
                 "holidays_carry": 0,
-                "sum_absence": {"regular_holidays": 5.0}
+                "sum_absence": {"regular_holidays": 5.0},
             },
             {
                 "users_id": 2,
@@ -143,7 +147,7 @@ def test_get_hr_violations_returns_all_violations():
                 "overtime_carryover": 0,
                 "holidays_quota": 25,
                 "holidays_carry": 0,
-                "sum_absence": {"regular_holidays": 15.0}
+                "sum_absence": {"regular_holidays": 15.0},
             },
         ]
     }
@@ -151,7 +155,7 @@ def test_get_hr_violations_returns_all_violations():
     config = {
         "max_overtime_hours": 80,
         "min_vacation_days": 10,
-        "max_vacation_remaining": 20
+        "max_vacation_remaining": 20,
     }
 
     violations = get_hr_violations(reports, config)
@@ -179,7 +183,7 @@ def test_get_hr_violations_returns_empty_for_no_violations():
                 "overtime_carryover": 0,
                 "holidays_quota": 25,
                 "holidays_carry": 0,
-                "sum_absence": {"regular_holidays": 15.0}
+                "sum_absence": {"regular_holidays": 15.0},
             },
         ]
     }
@@ -187,7 +191,7 @@ def test_get_hr_violations_returns_empty_for_no_violations():
     config = {
         "max_overtime_hours": 80,
         "min_vacation_days": 10,
-        "max_vacation_remaining": 15
+        "max_vacation_remaining": 15,
     }
 
     violations = get_hr_violations(reports, config)

@@ -11,13 +11,14 @@ Pattern: Server Layer (Layer 1)
 
 Architecture: Server → Service → Client
 """
+
 from __future__ import annotations
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp import FastMCP  # type: ignore
 
 from .client import ClockodoClient
 from .config import FeatureGroup, ServerConfig
-from .tools import hr_tools, debug_tools
+from .tools import debug_tools, hr_tools
 
 # Pattern #2: Configuration Management
 # Load configuration from environment variables with safe defaults
@@ -28,7 +29,7 @@ mcp = FastMCP("clockodo")
 
 
 @mcp.tool()
-def health() -> dict[str, str]:
+def health() -> dict[str, str | list[str]]:
     """Health check for the Clockodo MCP server."""
     return {
         "status": "ok",
@@ -63,6 +64,7 @@ def get_raw_user_reports(year: int) -> dict:
 # Conditional Tool Registration
 # ==============================================
 
+
 def register_tools():
     """
     Register MCP tools based on enabled features.
@@ -77,7 +79,9 @@ def register_tools():
     if config.is_enabled(FeatureGroup.HR_READONLY):
 
         @mcp.tool()
-        def check_overtime_compliance(year: int, max_overtime_hours: float = 80) -> dict:
+        def check_overtime_compliance(
+            year: int, max_overtime_hours: float = 80
+        ) -> dict:
             """
             Check which employees have excessive overtime.
 
@@ -105,7 +109,9 @@ def register_tools():
             Returns:
                 Dictionary with vacation violations
             """
-            return hr_tools.check_vacation_compliance(year, min_vacation_days, max_vacation_remaining)
+            return hr_tools.check_vacation_compliance(
+                year, min_vacation_days, max_vacation_remaining
+            )
 
         @mcp.tool()
         def get_hr_summary(
@@ -136,7 +142,11 @@ def register_tools():
         @mcp.tool()
         def get_my_time_entries(start_date: str, end_date: str) -> dict:
             """Get time entries for current user (placeholder)."""
-            return {"message": "User read tools coming soon", "start_date": start_date, "end_date": end_date}
+            return {
+                "message": "User read tools coming soon",
+                "start_date": start_date,
+                "end_date": end_date,
+            }
 
     # User Edit Tools
     if config.is_enabled(FeatureGroup.USER_EDIT):
@@ -144,7 +154,11 @@ def register_tools():
         @mcp.tool()
         def add_my_time_entry(date: str, hours: float, description: str) -> dict:
             """Add time entry for current user (placeholder)."""
-            return {"message": "User edit tools coming soon", "date": date, "hours": hours}
+            return {
+                "message": "User edit tools coming soon",
+                "date": date,
+                "hours": hours,
+            }
 
     # Admin Read Tools
     if config.is_enabled(FeatureGroup.ADMIN_READ):
@@ -163,7 +177,7 @@ def register_tools():
             return {"message": "Admin edit tools coming soon", "entry_id": entry_id}
 
 
-def create_server(client=None, test_config: ServerConfig = None):
+def create_server(client=None, test_config: ServerConfig | None = None):
     """Create server for testing purposes."""
     # This is a stub for testing - actual server uses mcp global
     test_conf = test_config or config

@@ -99,24 +99,24 @@ def get_hr_violations(reports: dict, config: dict) -> list[dict]:
             "user_id": report["users_id"],
             "user_name": report["users_name"],
             "year": report["year"],
-            "violations": []
+            "violations": [],
         }
 
         # Check overtime
         overtime_result = analyze_overtime(report, config["max_overtime_hours"])
         if overtime_result["has_violation"]:
-            user_violations["violations"].append({
-                "type": "excessive_overtime",
-                "overtime_hours": overtime_result["overtime_hours"],
-                "threshold": overtime_result["threshold"],
-                "excess_hours": overtime_result["excess_hours"]
-            })
+            user_violations["violations"].append(
+                {
+                    "type": "excessive_overtime",
+                    "overtime_hours": overtime_result["overtime_hours"],
+                    "threshold": overtime_result["threshold"],
+                    "excess_hours": overtime_result["excess_hours"],
+                }
+            )
 
         # Check vacation
         vacation_result = analyze_vacation(
-            report,
-            config["min_vacation_days"],
-            config["max_vacation_remaining"]
+            report, config["min_vacation_days"], config["max_vacation_remaining"]
         )
         if vacation_result["has_violation"]:
             violation = {

@@ -1,4 +1,4 @@
-.PHONY: help lint format test install clean build-mcp unittests manual-test
+.PHONY: help lint format format-check test install clean build-mcp unittests manual-test
 .DEFAULT_GOAL := help
 
 help:  ##@Usage Show this help.
@@ -35,6 +35,11 @@ format:  ##@Code-Quality Format code with black and isort
 	black src tests
 	isort src tests
 	ruff check --fix src tests
+
+format-check:  ##@Code-Quality Check code formatting without modifying
+	black --check src tests
+	isort --check-only src tests
+	ruff check src tests
 
 test:  ##@Code-Quality Run pytest with coverage
 	pytest --cov=clockodo_mcp --cov-report=term-missing

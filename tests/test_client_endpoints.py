@@ -1,7 +1,7 @@
-import respx
 import httpx
+import respx
 
-from clockodo_mcp.client import ClockodoClient, DEFAULT_BASE_URL
+from clockodo_mcp.client import DEFAULT_BASE_URL, ClockodoClient
 
 
 @respx.mock
