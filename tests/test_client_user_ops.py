@@ -1,6 +1,8 @@
+import json
+
 import httpx
 import respx
-import pytest
+
 from clockodo_mcp.client import DEFAULT_BASE_URL, ClockodoClient
 
 
@@ -21,8 +23,6 @@ def test_clock_start():
     data = client.clock_start(customers_id=123, services_id=456, billable=1)
 
     assert route.called
-    import json
-
     assert json.loads(route.calls[0].request.content) == payload
     assert data["running"]["id"] == 1001
 
@@ -63,12 +63,6 @@ def test_get_clock():
 def test_create_absence():
     client = ClockodoClient(api_user="u@example.com", api_key="k")
 
-    payload = {
-        "date_since": "2025-01-01",
-        "date_until": "2025-01-05",
-        "type": 1,  # Vacation
-    }
-
     route = respx.post(f"{DEFAULT_BASE_URL}absences").mock(
         return_value=httpx.Response(201, json={"absence": {"id": 2001}})
     )
@@ -78,7 +72,6 @@ def test_create_absence():
     )
 
     assert route.called
-    import json
 
     assert json.loads(route.calls[0].request.content) == {
         "date_since": "2025-01-01",
@@ -91,14 +84,6 @@ def test_create_absence():
 @respx.mock
 def test_create_entry():
     client = ClockodoClient(api_user="u@example.com", api_key="k")
-
-    payload = {
-        "customers_id": 123,
-        "services_id": 456,
-        "billable": 1,
-        "time_since": "2025-12-29T09:00:00Z",
-        "time_until": "2025-12-29T17:00:00Z",
-    }
 
     route = respx.post(f"{DEFAULT_BASE_URL}entries").mock(
         return_value=httpx.Response(201, json={"entry": {"id": 3001}})
@@ -150,7 +135,6 @@ def test_edit_absence():
     data = client.edit_absence(absence_id=2001, data={"status": 4})
 
     assert route.called
-    import json
 
     assert json.loads(route.calls[0].request.content) == {"status": 4}
     assert data["absence"]["status"] == 4
@@ -187,7 +171,6 @@ def test_edit_entry():
     data = client.edit_entry(entry_id=3001, data={"text": "Updated"})
 
     assert route.called
-    import json
 
     assert json.loads(route.calls[0].request.content) == {"text": "Updated"}
     assert data["entry"]["text"] == "Updated"
@@ -241,7 +224,6 @@ def test_clock_start_with_all_optional_params():
     )
 
     assert route.called
-    import json
 
     request_body = json.loads(route.calls[0].request.content)
     assert request_body["customers_id"] == 123
@@ -270,7 +252,6 @@ def test_create_absence_with_user_and_status():
     )
 
     assert route.called
-    import json
 
     request_body = json.loads(route.calls[0].request.content)
     assert request_body["users_id"] == 42
@@ -299,7 +280,6 @@ def test_create_entry_with_all_optional_params():
     )
 
     assert route.called
-    import json
 
     request_body = json.loads(route.calls[0].request.content)
     assert request_body["projects_id"] == 789

@@ -20,8 +20,7 @@ services:
     environment:
       - PYTHONPATH=/app/src
     command: >
-      pylint --rcfile=/app/deps/jaywalker-utils/common/config/pylintrc
-      --ignore-paths=.*/tests/.* /app/src/clockodo_mcp /app/tests
+      pylint /app/src/clockodo_mcp /app/tests
 
   test:
     build:

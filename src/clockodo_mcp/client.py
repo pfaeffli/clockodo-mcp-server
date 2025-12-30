@@ -138,8 +138,8 @@ class ClockodoClient:
                     request=e.request,
                     response=e.response,
                 ) from e
-            except Exception:
-                raise e
+            except Exception as parse_error:
+                raise e from parse_error
         return resp.json()
 
     # ==============================================
@@ -217,8 +217,8 @@ class ClockodoClient:
                     request=e.request,
                     response=e.response,
                 ) from e
-            except Exception:
-                raise e
+            except Exception as parse_error:
+                raise e from parse_error
         return resp.json()
 
     # ==============================================

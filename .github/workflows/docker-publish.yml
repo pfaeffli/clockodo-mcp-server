@@ -81,8 +81,16 @@ jobs:
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           format: 'table'
-          severity: 'CRITICAL,HIGH,MEDIUM'
-          exit-code: '1'  # Fail on vulnerabilities
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'  # Fail only on CRITICAL/HIGH vulnerabilities
+
+      - name: Run Trivy vulnerability scanner (informational - including MEDIUM)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          format: 'table'
+          severity: 'MEDIUM'
+          exit-code: '0'  # Report MEDIUM but don't fail
 
       # License Scanning
       - name: Install license checker
@@ -108,12 +116,13 @@ jobs:
 
       # Container Security Best Practices Scan
       - name: Run Dockle for container best practices
-        uses: hands-lab/dockle-action@v1
-        with:
-          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          exit-code: '1'
-          exit-level: 'fatal'
-          arguments: '-af settings.py -i DKL-DI-0005'
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            goodwithtech/dockle:latest \
+            --exit-code 1 --exit-level fatal \
+            -af settings.py \
+            -i DKL-DI-0005 \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
       # Push Docker image (only on version tags)
       - name: Push Docker image

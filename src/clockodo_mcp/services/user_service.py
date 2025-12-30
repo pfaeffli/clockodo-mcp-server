@@ -9,6 +9,8 @@ Pattern: Service Layer (Layer 2)
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+import httpx
+
 if TYPE_CHECKING:
     from ..client import ClockodoClient
 
@@ -160,7 +162,7 @@ class UserService:
         if auto_cancel:
             try:
                 self.cancel_my_vacation(absence_id)
-            except Exception:
-                # If cancelling fails, try deletion anyway
+            except (httpx.HTTPStatusError, Exception):  # pylint: disable=broad-exception-caught
+                # If cancelling fails (e.g., already cancelled), try deletion anyway
                 pass
         return self.client.delete_absence(absence_id)

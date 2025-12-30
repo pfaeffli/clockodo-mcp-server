@@ -87,7 +87,7 @@ def test_get_user_reports_with_user_filter():
         )
     )
 
-    data = client.get_user_reports(year=2024, user_id=42, type_level=2)
+    client.get_user_reports(year=2024, user_id=42, type_level=2)
 
     assert route.called
     assert route.calls[0].request.url.params.get("year") == "2024"
