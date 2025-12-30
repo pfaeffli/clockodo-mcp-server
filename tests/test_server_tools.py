@@ -7,10 +7,17 @@ from clockodo_mcp.tools.hr_tools import (
     get_hr_summary,
 )
 from clockodo_mcp.tools.user_tools import (
+    get_my_clock,
     start_my_clock,
     stop_my_clock,
     add_my_vacation,
+    get_my_entries,
+    add_my_entry,
+    edit_my_entry,
+    delete_my_entry,
+    delete_my_vacation,
 )
+from clockodo_mcp.tools.debug_tools import get_raw_user_reports
 
 
 def test_server_list_users_tool_calls_client():
@@ -192,3 +199,105 @@ def test_add_my_vacation_tool(mock_client_class):
         date_since="2025-01-01", date_until="2025-01-05", absence_type=1, user_id=42
     )
     assert result["absence"]["id"] == 200
+
+
+@patch("clockodo_mcp.tools.user_tools.ClockodoClient")
+def test_get_my_clock_tool(mock_client_class):
+    mock_client = Mock()
+    mock_client_class.from_env.return_value = mock_client
+    mock_client.get_clock.return_value = {"running": None, "stopped": None}
+
+    result = get_my_clock()
+
+    mock_client.get_clock.assert_called_once()
+    assert result["running"] is None
+
+
+@patch("clockodo_mcp.tools.user_tools.ClockodoClient")
+def test_get_my_entries_tool(mock_client_class):
+    mock_client = Mock()
+    mock_client_class.from_env.return_value = mock_client
+    mock_client.api_user = "me@example.com"
+    mock_client.list_users.return_value = {
+        "users": [{"id": 42, "email": "me@example.com"}]
+    }
+    mock_client.list_entries.return_value = {"entries": [{"id": 100}]}
+
+    result = get_my_entries(
+        time_since="2025-01-01T00:00:00Z", time_until="2025-01-01T23:59:59Z"
+    )
+
+    mock_client.list_entries.assert_called_once()
+    assert result["entries"][0]["id"] == 100
+
+
+@patch("clockodo_mcp.tools.user_tools.ClockodoClient")
+def test_add_my_entry_tool(mock_client_class):
+    mock_client = Mock()
+    mock_client_class.from_env.return_value = mock_client
+    mock_client.api_user = "me@example.com"
+    mock_client.list_users.return_value = {
+        "users": [{"id": 42, "email": "me@example.com"}]
+    }
+    mock_client.create_entry.return_value = {"entry": {"id": 300}}
+
+    result = add_my_entry(
+        customers_id=123,
+        services_id=456,
+        time_since="2025-01-01T09:00:00Z",
+        time_until="2025-01-01T10:00:00Z",
+        billable=1,
+    )
+
+    mock_client.create_entry.assert_called_once()
+    assert result["entry"]["id"] == 300
+
+
+@patch("clockodo_mcp.tools.user_tools.ClockodoClient")
+def test_edit_my_entry_tool(mock_client_class):
+    mock_client = Mock()
+    mock_client_class.from_env.return_value = mock_client
+    mock_client.edit_entry.return_value = {"entry": {"id": 300, "text": "Updated"}}
+
+    result = edit_my_entry(entry_id=300, data={"text": "Updated"})
+
+    mock_client.edit_entry.assert_called_once_with(300, {"text": "Updated"})
+    assert result["entry"]["text"] == "Updated"
+
+
+@patch("clockodo_mcp.tools.user_tools.ClockodoClient")
+def test_delete_my_entry_tool(mock_client_class):
+    mock_client = Mock()
+    mock_client_class.from_env.return_value = mock_client
+    mock_client.delete_entry.return_value = {"success": True}
+
+    result = delete_my_entry(entry_id=300)
+
+    mock_client.delete_entry.assert_called_once_with(300)
+    assert result["success"] is True
+
+
+@patch("clockodo_mcp.tools.user_tools.ClockodoClient")
+def test_delete_my_vacation_tool(mock_client_class):
+    mock_client = Mock()
+    mock_client_class.from_env.return_value = mock_client
+    mock_client.delete_absence.return_value = {"success": True}
+
+    result = delete_my_vacation(absence_id=200)
+
+    mock_client.delete_absence.assert_called_once_with(200)
+    assert result["success"] is True
+
+
+@patch("clockodo_mcp.tools.debug_tools.ClockodoClient")
+def test_get_raw_user_reports_tool(mock_client_class):
+    mock_client = Mock()
+    mock_client_class.from_env.return_value = mock_client
+    mock_client.get_user_reports.return_value = {
+        "userreports": [{"users_id": 1, "sum_hours": 144000}]
+    }
+
+    result = get_raw_user_reports(year=2025)
+
+    mock_client.get_user_reports.assert_called_once_with(year=2025)
+    assert result["userreports"][0]["users_id"] == 1

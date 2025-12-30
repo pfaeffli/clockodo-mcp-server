@@ -307,7 +307,12 @@ def create_server(client=None, test_config: ServerConfig | None = None):
                 "list_customers": lambda: client.list_customers() if client else {},
                 "list_services": lambda: client.list_services() if client else {},
             }
-            self.tool_names = ["health", "list_users", "list_customers", "list_services"]
+            self.tool_names = [
+                "health",
+                "list_users",
+                "list_customers",
+                "list_services",
+            ]
 
             # Add tool names based on config
             if test_conf.hr_readonly:
