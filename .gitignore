@@ -10,3 +10,8 @@ __pycache__/
 .ipynb_checkpoints/
 */.ipynb_checkpoints/*
 *.ipynb_checkpoints
+
+# Security scan outputs
+licenses.md
+sbom.spdx.json
+.output.txt

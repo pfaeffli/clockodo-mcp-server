@@ -2,6 +2,11 @@
 
 MCP server wrapper for the Clockodo time tracking API with configurable feature sets.
 
+[![Docker Image](https://ghcr-badge.egpl.dev/pfaeffli/clockodo-mcp-server/latest_tag?trim=major&label=latest)](https://github.com/pfaeffli/clockodo-mcp-server/pkgs/container/clockodo-mcp-server)
+[![Security Scans](https://img.shields.io/badge/security-scanned-green)](https://github.com/pfaeffli/clockodo-mcp-server/actions)
+
+**🐳 Docker Image:** `ghcr.io/pfaeffli/clockodo-mcp-server:latest`
+
 ## Table of Contents
 - [Architecture & Patterns](#architecture--patterns)
 - [Setup](#setup)
@@ -217,19 +222,21 @@ if config.is_enabled(FeatureGroup.ADMIN_EDIT):
 
 ## Setup
 
-1. Build the Docker image:
-   ```bash
-   make build
-   ```
+### Option 1: Using Pre-built Docker Image from GitHub Container Registry
 
-2. Add configuration to your IDE's MCP settings:
+Add configuration to your IDE's MCP settings (e.g., Claude Desktop):
 
 ```json
 {
   "mcpServers": {
     "clockodo": {
       "command": "docker",
-      "args": ["run", "--rm", "-i", "clockodo-mcp:latest"],
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "ghcr.io/pfaeffli/clockodo-mcp-server:latest"
+      ],
       "env": {
         "CLOCKODO_API_USER": "your@email.com",
         "CLOCKODO_API_KEY": "your_api_key",
@@ -246,6 +253,20 @@ if config.is_enabled(FeatureGroup.ADMIN_EDIT):
   }
 }
 ```
+
+**Available image tags:**
+- `latest` - Latest stable release
+- `v1.0.0`, `v1.0`, `v1` - Semantic version tags
+- `main-<sha>` - Latest main branch build
+
+### Option 2: Build Locally
+
+1. Build the Docker image:
+   ```bash
+   make build-mcp
+   ```
+
+2. Add configuration to your IDE's MCP settings using `clockodo-mcp:latest` instead of the ghcr.io image.
 
 ## Environment Variables
 
@@ -285,20 +306,37 @@ if config.is_enabled(FeatureGroup.ADMIN_EDIT):
 
 ```bash
 # Build
-make build
+make build-mcp
 
 # Run tests
-docker-compose -f docker-compose.test.yml run --rm test
+make test
 
 # Type checking
-docker-compose -f docker-compose.test.yml run --rm type
+make type
 
 # Linting
-docker-compose -f docker-compose.test.yml run --rm lint
+make lint
 
 # Style check
-docker-compose -f docker-compose.test.yml run --rm style-check
+make format-check
 ```
+
+### Security Scanning
+
+Run comprehensive security scans on the Docker image:
+
+```bash
+# Run all security scans (vulnerability, Docker best practices, licenses, SBOM)
+make all-scans
+
+# Individual scans
+make vulnerability-scan  # Trivy vulnerability scanning
+make docker-scan        # Dockle Docker best practices
+make license-check      # Python dependency license check
+make sbom              # Generate Software Bill of Materials
+```
+
+All security tools run via Docker containers - no local installation required.
 
 ## Manual Testing
 

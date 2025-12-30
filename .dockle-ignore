@@ -1,0 +1,2 @@
+# Ignore false positive - settings.py is part of MCP library, not actual credentials
+CIS-DI-0010 usr/local/lib/python3.13/site-packages/mcp/server/auth/settings.py

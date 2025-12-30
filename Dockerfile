@@ -28,5 +28,9 @@ ENV CLOCKODO_BASE_URL="https://my.clockodo.com/api/v2/"
 
 USER appuser
 
+# Health check for MCP server
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD clockodo-mcp --help > /dev/null || exit 1
+
 # Default command starts the MCP server entrypoint
 ENTRYPOINT ["clockodo-mcp"]

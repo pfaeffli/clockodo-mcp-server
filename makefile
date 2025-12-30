@@ -39,7 +39,7 @@ help:: ##@Usage Show this help.
 	@echo ""
 	@perl -e '$(HELP_FUN)' $(MAKEFILE_LIST)
 
-.PHONY: build-mcp test lint type format format-check manual-test clean
+.PHONY: build-mcp test lint type format format-check manual-test clean security-scan vulnerability-scan license-check docker-scan sbom all-scans
 
 build-mcp:	##@Docker Build clockodo-mcp:latest image
 	docker build -t clockodo-mcp:latest .
@@ -66,3 +66,41 @@ clean:	##@Cleanup Remove build artifacts and cache
 	rm -rf build/ dist/ *.egg-info .pytest_cache .mypy_cache .ruff_cache tests/.coverage.xml tests/.junit.xml
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete
+
+vulnerability-scan:	##@Security Run Trivy vulnerability scanner on Docker image
+	@echo "${BLUE}Running Trivy vulnerability scan...${RESET}"
+	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+		aquasec/trivy:latest image --severity CRITICAL,HIGH,MEDIUM clockodo-mcp:latest
+
+docker-scan:	##@Security Run Dockle security best practices scanner
+	@echo "${BLUE}Running Dockle container security scan...${RESET}"
+	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+		goodwithtech/dockle:latest --exit-code 1 --exit-level fatal \
+		-af settings.py \
+		-i DKL-DI-0005 \
+		clockodo-mcp:latest
+
+license-check:	##@Security Check Python dependencies licenses
+	@echo "${BLUE}Checking dependency licenses...${RESET}"
+	@pip install pip-licenses >/dev/null 2>&1 || true
+	@pip-licenses --format=markdown --output-file=licenses.md
+	@echo "${GREEN}License report saved to licenses.md${RESET}"
+	@echo ""
+	@echo "${BLUE}Checking for copyleft licenses...${RESET}"
+	@if pip-licenses | grep -iE "(GPL|AGPL)" | grep -v "LGPL"; then \
+		echo "${YELLOW}⚠️  Warning: Found copyleft licenses that may require attention${RESET}"; \
+		pip-licenses | grep -iE "(GPL|AGPL)" | grep -v "LGPL"; \
+	else \
+		echo "${GREEN}✅ No problematic licenses found${RESET}"; \
+	fi
+
+sbom:	##@Security Generate Software Bill of Materials (SBOM)
+	@echo "${BLUE}Generating SBOM...${RESET}"
+	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+		-v $(PWD):/out \
+		anchore/syft:latest clockodo-mcp:latest -o spdx-json=/out/sbom.spdx.json
+	@echo "${GREEN}SBOM saved to sbom.spdx.json${RESET}"
+
+security-scan: vulnerability-scan docker-scan	##@Security Run all Docker security scans
+
+all-scans: build-mcp security-scan license-check sbom	##@Security Build image and run all security scans
