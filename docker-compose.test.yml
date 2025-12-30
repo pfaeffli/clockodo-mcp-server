@@ -34,10 +34,10 @@ services:
     env_file: .env.example
     command: >
       pytest --cov-report=term-missing
-      --cov-report=xml:/app/tests/.coverage.xml
+      --cov-report=xml:/tmp/.coverage.xml
       --cov-config=/app/setup.cfg
       --cov=clockodo_mcp
-      --junitxml=/app/tests/.junit.xml /app/tests
+      --junitxml=/tmp/.junit.xml /app/tests
 
   style-check:
     build:
