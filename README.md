@@ -235,20 +235,28 @@ Add configuration to your IDE's MCP settings (e.g., Claude Desktop):
         "run",
         "--rm",
         "-i",
+        "-e",
+        "CLOCKODO_API_USER=your@email.com",
+        "-e",
+        "CLOCKODO_API_KEY=your_api_key",
+        "-e",
+        "CLOCKODO_USER_AGENT=my-company/1.0",
+        "-e",
+        "CLOCKODO_BASE_URL=https://my.clockodo.com/api/v2/",
+        "-e",
+        "CLOCKODO_EXTERNAL_APP_CONTACT=dev@company.com",
+        "-e",
+        "CLOCKODO_MCP_ENABLE_HR_READONLY=true",
+        "-e",
+        "CLOCKODO_MCP_ENABLE_USER_READ=true",
+        "-e",
+        "CLOCKODO_MCP_ENABLE_USER_EDIT=true",
+        "-e",
+        "CLOCKODO_MCP_ENABLE_ADMIN_READ=true",
+        "-e",
+        "CLOCKODO_MCP_ENABLE_ADMIN_EDIT=true",
         "ghcr.io/pfaeffli/clockodo-mcp-server:latest"
-      ],
-      "env": {
-        "CLOCKODO_API_USER": "your@email.com",
-        "CLOCKODO_API_KEY": "your_api_key",
-        "CLOCKODO_USER_AGENT": "my-company/1.0",
-        "CLOCKODO_BASE_URL": "https://my.clockodo.com/api/v2/",
-        "CLOCKODO_EXTERNAL_APP_CONTACT": "dev@company.com",
-        "CLOCKODO_MCP_ENABLE_HR_READONLY": "true",
-        "CLOCKODO_MCP_ENABLE_USER_READ": "true",
-        "CLOCKODO_MCP_ENABLE_USER_EDIT": "true",
-        "CLOCKODO_MCP_ENABLE_ADMIN_READ": "true",
-        "CLOCKODO_MCP_ENABLE_ADMIN_EDIT": "true"
-      }
+      ]
     }
   }
 }
