@@ -8,6 +8,7 @@
 2. Make the smallest changes possible.
 3. Have fast feedback loops. Always use text boxes for approval or rejection so I can give feedback.
 4. Focus on the most essential parts. Do not give verbose feedback if not asked.
+5. Only stage commits, do not commit on your own. Do not push to the repository.
 
 ## Project-specific
 
