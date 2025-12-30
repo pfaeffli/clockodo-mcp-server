@@ -247,7 +247,7 @@ class ClockodoClient:
             projects_id: Optional project ID
             text: Optional entry description
         """
-        data = {
+        data: dict[str, int | str] = {
             "customers_id": customers_id,
             "services_id": services_id,
         }
@@ -286,7 +286,10 @@ class ClockodoClient:
             time_until: End time in ISO 8601 UTC format (e.g., "2021-02-01T00:00:00Z")
             user_id: Optional user ID to filter entries
         """
-        params = {"time_since": time_since, "time_until": time_until}
+        params: dict[str, str | int] = {
+            "time_since": time_since,
+            "time_until": time_until,
+        }
         if user_id is not None:
             params["filter[users_id]"] = user_id
         return self._request("GET", "entries", params=params)

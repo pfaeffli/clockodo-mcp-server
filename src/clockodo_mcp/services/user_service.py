@@ -162,7 +162,11 @@ class UserService:
         if auto_cancel:
             try:
                 self.cancel_my_vacation(absence_id)
-            except (httpx.HTTPStatusError, Exception):  # pylint: disable=broad-exception-caught
+            # pylint: disable-next=broad-exception-caught
+            except (
+                httpx.HTTPStatusError,
+                Exception,
+            ):
                 # If cancelling fails (e.g., already cancelled), try deletion anyway
                 pass
         return self.client.delete_absence(absence_id)
