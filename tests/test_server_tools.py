@@ -6,6 +6,11 @@ from clockodo_mcp.tools.hr_tools import (
     check_vacation_compliance,
     get_hr_summary,
 )
+from clockodo_mcp.tools.user_tools import (
+    start_my_clock,
+    stop_my_clock,
+    add_my_vacation,
+)
 
 
 def test_server_list_users_tool_calls_client():
@@ -19,6 +24,32 @@ def test_server_list_users_tool_calls_client():
 
     mock_client.list_users.assert_called_once_with()
     assert result["users"][0]["id"] == 1
+
+
+def test_server_list_customers_tool_calls_client():
+    mock_client = Mock()
+    mock_client.list_customers.return_value = {"customers": [{"id": 100}]}
+
+    server = create_server(client=mock_client)
+
+    # call the tool
+    result = server.tools["list_customers"]()
+
+    mock_client.list_customers.assert_called_once_with()
+    assert result["customers"][0]["id"] == 100
+
+
+def test_server_list_services_tool_calls_client():
+    mock_client = Mock()
+    mock_client.list_services.return_value = {"services": [{"id": 200}]}
+
+    server = create_server(client=mock_client)
+
+    # call the tool
+    result = server.tools["list_services"]()
+
+    mock_client.list_services.assert_called_once_with()
+    assert result["services"][0]["id"] == 200
 
 
 @patch("clockodo_mcp.tools.hr_tools.ClockodoClient")
@@ -114,3 +145,50 @@ def test_get_hr_summary_returns_complete_report(mock_client_class):
     assert len(result["employees_with_violations"]) == 1
     assert result["employees_with_violations"][0]["user_name"] == "Alice"
     assert len(result["employees_with_violations"][0]["violations"]) == 2
+
+
+@patch("clockodo_mcp.tools.user_tools.ClockodoClient")
+def test_start_my_clock_tool(mock_client_class):
+    mock_client = Mock()
+    mock_client_class.from_env.return_value = mock_client
+    mock_client.clock_start.return_value = {"running": {"id": 100}}
+
+    result = start_my_clock(customers_id=1, services_id=2)
+
+    mock_client.clock_start.assert_called_once_with(
+        customers_id=1, services_id=2, billable=1, projects_id=None, text=None
+    )
+    assert result["running"]["id"] == 100
+
+
+@patch("clockodo_mcp.tools.user_tools.ClockodoClient")
+def test_stop_my_clock_tool(mock_client_class):
+    mock_client = Mock()
+    mock_client_class.from_env.return_value = mock_client
+    # Mock get_clock to return a running clock with ID
+    mock_client.get_clock.return_value = {"running": {"id": 1001}, "stopped": None}
+    mock_client.clock_stop.return_value = {"stopped": {"id": 1001}, "running": None}
+
+    result = stop_my_clock()
+
+    mock_client.get_clock.assert_called_once()
+    mock_client.clock_stop.assert_called_once_with(1001)
+    assert result["stopped"]["id"] == 1001
+
+
+@patch("clockodo_mcp.tools.user_tools.ClockodoClient")
+def test_add_my_vacation_tool(mock_client_class):
+    mock_client = Mock()
+    mock_client_class.from_env.return_value = mock_client
+    mock_client.api_user = "me@example.com"
+    mock_client.list_users.return_value = {
+        "users": [{"id": 42, "email": "me@example.com"}]
+    }
+    mock_client.create_absence.return_value = {"absence": {"id": 200}}
+
+    result = add_my_vacation(date_since="2025-01-01", date_until="2025-01-05")
+
+    mock_client.create_absence.assert_called_once_with(
+        date_since="2025-01-01", date_until="2025-01-05", absence_type=1, user_id=42
+    )
+    assert result["absence"]["id"] == 200

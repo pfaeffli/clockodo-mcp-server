@@ -99,3 +99,35 @@ def test_get_user_reports_with_user_id_parameter():
     assert route.calls[0].request.url.params.get("users_id") == "42"
     assert route.calls[0].request.url.params.get("type") == "1"
     assert data["userreports"][0]["users_id"] == 42
+
+
+@respx.mock
+def test_list_customers_calls_clockodo_and_returns_json():
+    client = ClockodoClient(api_user="u@example.com", api_key="k", user_agent="ua")
+
+    route = respx.get(f"{DEFAULT_BASE_URL}customers").mock(
+        return_value=httpx.Response(
+            200, json={"customers": [{"id": 100, "name": "Customer A"}]}
+        )
+    )
+
+    data = client.list_customers()
+
+    assert route.called
+    assert data["customers"][0]["name"] == "Customer A"
+
+
+@respx.mock
+def test_list_services_calls_clockodo_and_returns_json():
+    client = ClockodoClient(api_user="u@example.com", api_key="k", user_agent="ua")
+
+    route = respx.get(f"{DEFAULT_BASE_URL}services").mock(
+        return_value=httpx.Response(
+            200, json={"services": [{"id": 200, "name": "Service X"}]}
+        )
+    )
+
+    data = client.list_services()
+
+    assert route.called
+    assert data["services"][0]["name"] == "Service X"

@@ -86,7 +86,7 @@ class ClockodoClient:
         headers: dict[str, str] = {
             "X-ClockodoApiUser": self.api_user,
             "X-ClockodoApiKey": self.api_key,
-            "X-Clockodo-External-Application": f"{app_name}; {contact}",
+            "X-Clockodo-External-Application": f"{app_name};{contact}",
         }
         if self.user_agent:
             headers["User-Agent"] = self.user_agent
@@ -125,7 +125,21 @@ class ClockodoClient:
             json=json_data,
             timeout=timeout,
         )
-        resp.raise_for_status()
+        try:
+            resp.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            # Include response body in the error message for better debugging
+            try:
+                error_detail = resp.json()
+                logger.error("API Error: %s - %s", e, error_detail)
+                # Re-raise with detail in message
+                raise httpx.HTTPStatusError(
+                    f"{e} - Details: {error_detail}",
+                    request=e.request,
+                    response=e.response,
+                ) from e
+            except Exception:
+                raise e
         return resp.json()
 
     # ==============================================
@@ -140,6 +154,24 @@ class ClockodoClient:
             Dictionary with 'users' key containing list of user objects
         """
         return self._request("GET", "users")
+
+    def list_customers(self) -> dict:
+        """
+        List all customers from Clockodo.
+
+        Returns:
+            Dictionary with 'customers' key containing list of customer objects
+        """
+        return self._request("GET", "customers")
+
+    def list_services(self) -> dict:
+        """
+        List all services from Clockodo.
+
+        Returns:
+            Dictionary with 'services' key containing list of service objects
+        """
+        return self._request("GET", "services")
 
     def get_user_reports(
         self, year: int, user_id: int | None = None, type_level: int = 0
@@ -174,5 +206,196 @@ class ClockodoClient:
             params=params,
             timeout=30.0,
         )
-        resp.raise_for_status()
+        try:
+            resp.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            try:
+                error_detail = resp.json()
+                logger.error("API Error (v1): %s - %s", e, error_detail)
+                raise httpx.HTTPStatusError(
+                    f"{e} - Details: {error_detail}",
+                    request=e.request,
+                    response=e.response,
+                ) from e
+            except Exception:
+                raise e
         return resp.json()
+
+    # ==============================================
+    # Clock Operations (v2)
+    # ==============================================
+
+    def get_clock(self) -> dict:
+        """Get the currently running clock."""
+        return self._request("GET", "clock")
+
+    def clock_start(
+        self,
+        customers_id: int,
+        services_id: int,
+        billable: int | None = None,
+        projects_id: int | None = None,
+        text: str | None = None,
+    ) -> dict:
+        """
+        Start the clock.
+
+        Args:
+            customers_id: Customer ID
+            services_id: Service ID
+            billable: Optional billable flag (defaults to customer/project default if omitted)
+            projects_id: Optional project ID
+            text: Optional entry description
+        """
+        data = {
+            "customers_id": customers_id,
+            "services_id": services_id,
+        }
+        if billable is not None:
+            data["billable"] = billable
+        if projects_id is not None:
+            data["projects_id"] = projects_id
+        if text is not None:
+            data["text"] = text
+        return self._request("POST", "clock", json_data=data)
+
+    def clock_stop(self, entry_id: int) -> dict:
+        """
+        Stop the currently running clock.
+
+        Args:
+            entry_id: ID of the running clock entry to stop
+        """
+        return self._request("DELETE", f"clock/{entry_id}")
+
+    # ==============================================
+    # Entries (v2)
+    # ==============================================
+
+    def list_entries(
+        self,
+        time_since: str,
+        time_until: str,
+        user_id: int | None = None,
+    ) -> dict:
+        """
+        List time entries.
+
+        Args:
+            time_since: Start time in ISO 8601 UTC format (e.g., "2021-01-01T00:00:00Z")
+            time_until: End time in ISO 8601 UTC format (e.g., "2021-02-01T00:00:00Z")
+            user_id: Optional user ID to filter entries
+        """
+        params = {"time_since": time_since, "time_until": time_until}
+        if user_id is not None:
+            params["filter[users_id]"] = user_id
+        return self._request("GET", "entries", params=params)
+
+    def create_entry(
+        self,
+        customers_id: int,
+        services_id: int,
+        billable: int,
+        time_since: str,
+        time_until: str,
+        projects_id: int | None = None,
+        text: str | None = None,
+        user_id: int | None = None,
+    ) -> dict:
+        """
+        Create a new time entry.
+
+        Args:
+            customers_id: Customer ID
+            services_id: Service ID
+            billable: Billable flag (0, 1, or 2) - REQUIRED
+            time_since: Start time in ISO 8601 UTC format (e.g., "2021-01-01T00:00:00Z")
+            time_until: End time in ISO 8601 UTC format (e.g., "2021-02-01T00:00:00Z")
+            projects_id: Optional project ID
+            text: Optional entry description
+            user_id: Optional user ID (for admin operations)
+        """
+        data = {
+            "customers_id": customers_id,
+            "services_id": services_id,
+            "billable": billable,
+            "time_since": time_since,
+            "time_until": time_until,
+        }
+        if projects_id is not None:
+            data["projects_id"] = projects_id
+        if text is not None:
+            data["text"] = text
+        if user_id is not None:
+            data["users_id"] = user_id
+        return self._request("POST", "entries", json_data=data)
+
+    def edit_entry(self, entry_id: int, data: dict) -> dict:
+        """Edit an existing time entry."""
+        return self._request("PUT", f"entries/{entry_id}", json_data=data)
+
+    def delete_entry(self, entry_id: int) -> dict:
+        """Delete a time entry."""
+        return self._request("DELETE", f"entries/{entry_id}")
+
+    # ==============================================
+    # Absences (v2)
+    # ==============================================
+
+    def list_absences(self, year: int) -> dict:
+        """List absences for a year."""
+        return self._request("GET", "absences", params={"year": year})
+
+    def create_absence(
+        self,
+        date_since: str,
+        date_until: str,
+        absence_type: int,
+        user_id: int | None = None,
+        status: int | None = None,
+    ) -> dict:
+        """
+        Create a new absence (vacation, etc.).
+
+        Args:
+            date_since: Start date (YYYY-MM-DD)
+            date_until: End date (YYYY-MM-DD)
+            absence_type: Type of absence (1: Vacation, 2: Illness, etc.)
+            user_id: Optional user ID (if admin)
+            status: Optional status (0: Enquired, 1: Approved, 2: Declined)
+        """
+        data = {
+            "date_since": date_since,
+            "date_until": date_until,
+            "type": absence_type,
+        }
+        if user_id is not None:
+            data["users_id"] = user_id
+        if status is not None:
+            data["status"] = status
+        return self._request("POST", "absences", json_data=data)
+
+    def edit_absence(self, absence_id: int, data: dict) -> dict:
+        """
+        Edit an existing absence.
+
+        Args:
+            absence_id: Absence ID
+            data: Dictionary with fields to update
+
+        Status workflow:
+        - 0 (enquired) → 1 (approved), 2 (declined), or 4 (request cancelled)
+        - 1 (approved) → 3 (approval cancelled)
+        - Statuses 2, 3, 4 can be deleted (with admin rights)
+        """
+        return self._request("PUT", f"absences/{absence_id}", json_data=data)
+
+    def delete_absence(self, absence_id: int) -> dict:
+        """
+        Delete an absence.
+
+        Note: The absence must be in status 2 (declined), 3 (approval cancelled),
+              or 4 (request cancelled) before deletion.
+              Requires admin rights for absence administration.
+        """
+        return self._request("DELETE", f"absences/{absence_id}")

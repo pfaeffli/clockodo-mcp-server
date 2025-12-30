@@ -88,6 +88,8 @@ pytest-cov==7.0.0
     # via -r requirements/dev.in
 pytest-mock==3.15.1
     # via -r requirements/dev.in
+python-dotenv==1.2.1
+    # via -r requirements/dev.in
 pytokens==0.3.0
     # via black
 respx==0.22.0

@@ -18,7 +18,7 @@ from mcp.server.fastmcp import FastMCP  # type: ignore
 
 from .client import ClockodoClient
 from .config import FeatureGroup, ServerConfig
-from .tools import debug_tools, hr_tools
+from .tools import debug_tools, hr_tools, user_tools
 
 # Pattern #2: Configuration Management
 # Load configuration from environment variables with safe defaults
@@ -42,6 +42,20 @@ def list_users() -> dict:
     """List all users from Clockodo API."""
     client = ClockodoClient.from_env()
     return client.list_users()
+
+
+@mcp.tool()
+def list_customers() -> dict:
+    """List all customers from Clockodo API."""
+    client = ClockodoClient.from_env()
+    return client.list_customers()
+
+
+@mcp.tool()
+def list_services() -> dict:
+    """List all services from Clockodo API."""
+    client = ClockodoClient.from_env()
+    return client.list_services()
 
 
 @mcp.tool()
@@ -138,27 +152,130 @@ def register_tools():
 
     # User Read Tools
     if config.is_enabled(FeatureGroup.USER_READ):
-        # Placeholder for user read tools
+
         @mcp.tool()
-        def get_my_time_entries(start_date: str, end_date: str) -> dict:
-            """Get time entries for current user (placeholder)."""
-            return {
-                "message": "User read tools coming soon",
-                "start_date": start_date,
-                "end_date": end_date,
-            }
+        def get_my_clock() -> dict:
+            """Get the currently running clock for the authenticated user."""
+            return user_tools.get_my_clock()
+
+        @mcp.tool()
+        def get_my_time_entries(time_since: str, time_until: str) -> dict:
+            """
+            Get time entries for the authenticated user in a given time range.
+
+            Args:
+                time_since: Start time (e.g., 2025-01-01 00:00:00)
+                time_until: End time (e.g., 2025-01-01 23:59:59)
+            """
+            return user_tools.get_my_entries(time_since, time_until)
 
     # User Edit Tools
     if config.is_enabled(FeatureGroup.USER_EDIT):
-        # Placeholder for user edit tools
+
         @mcp.tool()
-        def add_my_time_entry(date: str, hours: float, description: str) -> dict:
-            """Add time entry for current user (placeholder)."""
-            return {
-                "message": "User edit tools coming soon",
-                "date": date,
-                "hours": hours,
-            }
+        def start_my_clock(
+            customers_id: int,
+            services_id: int,
+            billable: int = 1,
+            projects_id: int | None = None,
+            text: str | None = None,
+        ) -> dict:
+            """
+            Start the clock for the authenticated user.
+
+            Args:
+                customers_id: ID of the customer
+                services_id: ID of the service
+                billable: Whether the entry is billable (1) or not (0)
+                projects_id: Optional project ID
+                text: Optional description
+            """
+            return user_tools.start_my_clock(
+                customers_id=customers_id,
+                services_id=services_id,
+                billable=billable,
+                projects_id=projects_id,
+                text=text,
+            )
+
+        @mcp.tool()
+        def stop_my_clock() -> dict:
+            """Stop the currently running clock for the authenticated user."""
+            return user_tools.stop_my_clock()
+
+        @mcp.tool()
+        def add_my_vacation(date_since: str, date_until: str) -> dict:
+            """
+            Add a vacation for the authenticated user.
+
+            Args:
+                date_since: Start date (YYYY-MM-DD)
+                date_until: End date (YYYY-MM-DD)
+            """
+            return user_tools.add_my_vacation(date_since, date_until)
+
+        @mcp.tool()
+        def add_my_time_entry(
+            customers_id: int,
+            services_id: int,
+            time_since: str,
+            time_until: str,
+            billable: int = 1,
+            projects_id: int | None = None,
+            text: str | None = None,
+        ) -> dict:
+            """
+            Add a manual time entry for the authenticated user.
+
+            Args:
+                customers_id: ID of the customer
+                services_id: ID of the service
+                time_since: Start time (e.g., 2025-01-01 09:00:00)
+                time_until: End time (e.g., 2025-01-01 10:00:00)
+                billable: Whether the entry is billable (1) or not (0)
+                projects_id: Optional project ID
+                text: Optional description
+            """
+            return user_tools.add_my_entry(
+                customers_id=customers_id,
+                services_id=services_id,
+                time_since=time_since,
+                time_until=time_until,
+                billable=billable,
+                projects_id=projects_id,
+                text=text,
+            )
+
+        @mcp.tool()
+        def edit_my_time_entry(entry_id: int, data: dict) -> dict:
+            """
+            Edit a time entry for the authenticated user.
+
+            Args:
+                entry_id: ID of the entry to edit
+                data: Dictionary of fields to update (e.g., {"text": "new description"})
+            """
+            return user_tools.edit_my_entry(entry_id, data)
+
+        @mcp.tool()
+        def delete_my_time_entry(entry_id: int) -> dict:
+            """
+            Delete a time entry for the authenticated user.
+
+            Args:
+                entry_id: ID of the entry to delete
+            """
+            return user_tools.delete_my_entry(entry_id)
+
+        @mcp.tool()
+        def delete_my_vacation(absence_id: int) -> dict:
+            """
+            Delete a vacation/absence for the authenticated user.
+
+            Args:
+                absence_id: ID of the absence to delete
+            """
+            return user_tools.delete_my_vacation(absence_id)
 
     # Admin Read Tools
     if config.is_enabled(FeatureGroup.ADMIN_READ):
@@ -185,8 +302,12 @@ def create_server(client=None, test_config: ServerConfig | None = None):
     class MockServer:
         def __init__(self):
             self.config = test_conf
-            self.tools = {"list_users": lambda: client.list_users() if client else {}}
-            self.tool_names = ["health", "list_users"]
+            self.tools = {
+                "list_users": lambda: client.list_users() if client else {},
+                "list_customers": lambda: client.list_customers() if client else {},
+                "list_services": lambda: client.list_services() if client else {},
+            }
+            self.tool_names = ["health", "list_users", "list_customers", "list_services"]
 
             # Add tool names based on config
             if test_conf.hr_readonly:
@@ -200,7 +321,7 @@ def create_server(client=None, test_config: ServerConfig | None = None):
             if test_conf.user_read:
                 self.tool_names.append("get_my_time_entries")
             if test_conf.user_edit:
-                self.tool_names.append("add_my_time_entry")
+                self.tool_names.extend(["add_my_time_entry", "delete_my_vacation"])
             if test_conf.admin_read:
                 self.tool_names.append("get_all_time_entries")
             if test_conf.admin_edit:
