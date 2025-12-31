@@ -146,6 +146,7 @@ class HRService:
         reports = self.client.get_user_reports(year=year)
 
         config = {
+            "year": year,
             "max_overtime_hours": max_overtime_hours,
             "min_vacation_days": min_vacation_days,
             "max_vacation_remaining": max_vacation_remaining,

@@ -13,11 +13,11 @@ def analyze_overtime(report: dict, max_hours_threshold: float) -> dict:
         Dictionary with overtime analysis results
     """
     # Convert seconds to hours
-    diff_seconds = report.get("diff", 0)
-    carryover_seconds = report.get("overtime_carryover", 0)
+    diff_seconds = report.get("diff") or 0
+    carryover_seconds = report.get("overtime_carryover") or 0
 
-    diff_hours = diff_seconds / 3600
-    carryover_hours = carryover_seconds / 3600
+    diff_hours = float(diff_seconds) / 3600
+    carryover_hours = float(carryover_seconds) / 3600
     total_overtime = diff_hours + carryover_hours
 
     has_violation = total_overtime > max_hours_threshold
@@ -48,10 +48,10 @@ def analyze_vacation(
     Returns:
         Dictionary with vacation analysis results
     """
-    quota = report.get("holidays_quota", 0)
-    carry = report.get("holidays_carry", 0)
-    sum_absence = report.get("sum_absence", {})
-    used = sum_absence.get("regular_holidays", 0.0)
+    quota = report.get("holidays_quota") or 0
+    carry = report.get("holidays_carry") or 0
+    sum_absence = report.get("sum_absence") or {}
+    used = float(sum_absence.get("regular_holidays") or 0.0)
 
     total_available = quota + carry
     remaining = total_available - used
@@ -62,6 +62,10 @@ def analyze_vacation(
         "total_available": total_available,
         "has_violation": False,
     }
+
+    # If no vacation is available, it's always successful
+    if total_available <= 0:
+        return result
 
     # Check if too many vacation days remaining (higher priority)
     if remaining > max_days_remaining:
@@ -94,11 +98,11 @@ def get_hr_violations(reports: dict, config: dict) -> list[dict]:
     """
     violations = []
 
-    for report in reports.get("userreports", []):
+    for report in reports.get("userreports") or []:
         user_violations = {
-            "user_id": report["users_id"],
-            "user_name": report["users_name"],
-            "year": report["year"],
+            "user_id": report.get("users_id"),
+            "user_name": report.get("users_name"),
+            "year": report.get("year", config.get("year", 0)),
             "violations": [],
         }
 

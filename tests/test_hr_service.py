@@ -93,3 +93,27 @@ def test_hr_service_get_hr_summary():
     assert len(result["employees_with_violations"]) == 1
     assert result["employees_with_violations"][0]["user_name"] == "Alice"
     assert len(result["employees_with_violations"][0]["violations"]) == 2
+
+
+def test_hr_service_get_hr_summary_handles_missing_year_in_reports():
+    mock_client = Mock()
+    mock_client.get_user_reports.return_value = {
+        "userreports": [
+            {
+                "users_id": 1,
+                "users_name": "Alice",
+                # missing 'year'
+                "diff": 0,
+                "holidays_quota": 0,
+            }
+        ]
+    }
+
+    service = HRService(mock_client)
+    # Year 2025 passed to service
+    result = service.get_hr_summary(year=2025)
+
+    assert result["year"] == 2025
+    assert result["employees_with_violations"] == []
+    # Verify that the analyzer was called with year 2025 from config
+    # We can check the internal structure if we want, but checking the overall result is enough

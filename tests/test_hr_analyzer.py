@@ -126,6 +126,26 @@ def test_analyze_vacation_handles_missing_sum_absence():
     assert result["remaining_days"] == 25.0
 
 
+def test_analyze_vacation_success_when_zero_available():
+    report = {
+        "users_id": 5,
+        "users_name": "Eve",
+        "year": 2024,
+        "holidays_quota": 0,
+        "holidays_carry": 0,
+        "sum_absence": {
+            "regular_holidays": 0.0,
+        },
+    }
+
+    result = analyze_vacation(report, min_days_used=10, max_days_remaining=15)
+
+    assert result["has_violation"] is False
+    assert result["total_available"] == 0.0
+    assert result["used_days"] == 0.0
+    assert result["remaining_days"] == 0.0
+
+
 def test_get_hr_violations_returns_all_violations():
     reports = {
         "userreports": [
@@ -198,3 +218,53 @@ def test_get_hr_violations_returns_empty_for_no_violations():
 
     assert len(violations) == 1
     assert len(violations[0]["violations"]) == 0
+
+
+def test_analyze_overtime_handles_null_values():
+    report = {
+        "diff": None,
+        "overtime_carryover": None,
+    }
+    result = analyze_overtime(report, max_hours_threshold=80)
+    assert result["overtime_hours"] == 0.0
+    assert result["has_violation"] is False
+
+
+def test_analyze_vacation_handles_null_values():
+    report = {
+        "holidays_quota": None,
+        "holidays_carry": None,
+        "sum_absence": None,
+    }
+    result = analyze_vacation(report, min_days_used=10, max_days_remaining=15)
+    assert result["used_days"] == 0.0
+    assert result["remaining_days"] == 0.0
+    assert result["total_available"] == 0.0
+    assert result["has_violation"] is False
+
+
+def test_get_hr_violations_handles_missing_year_and_null_reports():
+    reports = {
+        "userreports": [
+            {
+                "users_id": 1,
+                "users_name": "Alice",
+                # missing 'year'
+                "diff": 0,
+                "holidays_quota": 0,
+            }
+        ]
+    }
+    config = {
+        "year": 2025,
+        "max_overtime_hours": 80,
+        "min_vacation_days": 10,
+        "max_vacation_remaining": 20,
+    }
+
+    violations = get_hr_violations(reports, config)
+    assert violations[0]["year"] == 2025
+
+    # Test completely null reports
+    assert not get_hr_violations({}, config)
+    assert not get_hr_violations({"userreports": None}, config)

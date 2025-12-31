@@ -246,15 +246,7 @@ Add configuration to your IDE's MCP settings (e.g., Claude Desktop):
         "-e",
         "CLOCKODO_EXTERNAL_APP_CONTACT=dev@company.com",
         "-e",
-        "CLOCKODO_MCP_ENABLE_HR_READONLY=true",
-        "-e",
-        "CLOCKODO_MCP_ENABLE_USER_READ=true",
-        "-e",
-        "CLOCKODO_MCP_ENABLE_USER_EDIT=true",
-        "-e",
-        "CLOCKODO_MCP_ENABLE_ADMIN_READ=true",
-        "-e",
-        "CLOCKODO_MCP_ENABLE_ADMIN_EDIT=true",
+        "CLOCKODO_MCP_ROLE=employee",
         "ghcr.io/pfaeffli/clockodo-mcp-server:latest"
       ]
     }
@@ -287,28 +279,75 @@ Add configuration to your IDE's MCP settings (e.g., Claude Desktop):
 - `CLOCKODO_BASE_URL` - API base URL (default: "https://my.clockodo.com/api/v2/")
 - `CLOCKODO_EXTERNAL_APP_CONTACT` - Contact info for external app header (default: API user email)
 
-### Feature Configuration (Optional)
+### Role Configuration (Recommended)
 
-**Quick Presets:**
-- `CLOCKODO_MCP_PRESET=readonly` - HR analytics only (default)
-- `CLOCKODO_MCP_PRESET=user` - HR analytics + your own time entries
-- `CLOCKODO_MCP_PRESET=admin` - All features
+Use `CLOCKODO_MCP_ROLE` to set the user's role:
 
-**Granular Flags:**
-- `CLOCKODO_MCP_ENABLE_HR_READONLY=true` - HR compliance analytics
-- `CLOCKODO_MCP_ENABLE_USER_READ=true` - Read your time entries
-- `CLOCKODO_MCP_ENABLE_USER_EDIT=true` - Edit your time entries
-- `CLOCKODO_MCP_ENABLE_ADMIN_READ=true` - Read all users' data
-- `CLOCKODO_MCP_ENABLE_ADMIN_EDIT=true` - Edit all users' data
+```bash
+CLOCKODO_MCP_ROLE=employee      # Default - Track your own time
+CLOCKODO_MCP_ROLE=team_leader   # Employee + approve vacations & edit team entries
+CLOCKODO_MCP_ROLE=hr_analytics  # View HR compliance reports only
+CLOCKODO_MCP_ROLE=admin         # Full access to everything
+```
+
+| Role | Can Do |
+|------|--------|
+| **employee** | Track own time, request vacation |
+| **team_leader** | Everything employee can + approve team vacations + edit team entries |
+| **hr_analytics** | View HR compliance reports (overtime, vacation violations) for all employees |
+| **admin** | Full access to all features |
+
+### Legacy Configuration (Deprecated)
+
+The following are still supported but deprecated. Use `CLOCKODO_MCP_ROLE` instead:
+
+**Legacy Presets:**
+- `CLOCKODO_MCP_PRESET=readonly` - Maps to hr_analytics role
+- `CLOCKODO_MCP_PRESET=user` - Maps to employee role
+- `CLOCKODO_MCP_PRESET=team_leader` - Maps to team_leader role
+- `CLOCKODO_MCP_PRESET=admin` - Maps to admin role
+
+**Legacy Granular Flags:**
+- `CLOCKODO_MCP_ENABLE_HR_READONLY=true`
+- `CLOCKODO_MCP_ENABLE_USER_READ=true`
+- `CLOCKODO_MCP_ENABLE_USER_EDIT=true`
+- `CLOCKODO_MCP_ENABLE_TEAM_LEADER=true`
+- `CLOCKODO_MCP_ENABLE_ADMIN_READ=true`
+- `CLOCKODO_MCP_ENABLE_ADMIN_EDIT=true`
 
 ## Available Tools
 
+### Core Tools (Always Available)
 - `health` - Health check (shows enabled features)
 - `list_users` - List all Clockodo users
+- `list_customers` - List all customers
+- `list_services` - List all services
 - `get_raw_user_reports(year)` - Get raw API response for debugging
+
+### HR Analytics (when `HR_READONLY` enabled)
 - `check_overtime_compliance(year, max_overtime_hours)` - Check employee overtime
 - `check_vacation_compliance(year, min_vacation_days, max_vacation_remaining)` - Check vacation usage
 - `get_hr_summary(year, ...)` - Complete HR compliance report
+
+### User Tools (when `USER_READ` or `USER_EDIT` enabled)
+- `get_my_clock()` - Get currently running clock
+- `get_my_time_entries(time_since, time_until)` - Get your time entries
+- `start_my_clock(...)` - Start tracking time
+- `stop_my_clock()` - Stop tracking time
+- `add_my_time_entry(...)` - Add a manual time entry
+- `edit_my_time_entry(entry_id, data)` - Edit your time entry
+- `delete_my_time_entry(entry_id)` - Delete your time entry
+- `add_my_vacation(date_since, date_until)` - Request vacation
+- `delete_my_vacation(absence_id)` - Delete vacation request
+
+### Team Leader Tools (when `TEAM_LEADER` enabled)
+- `list_pending_vacation_requests(year)` - List all pending vacation requests
+- `approve_vacation_request(absence_id)` - Approve a vacation request
+- `reject_vacation_request(absence_id)` - Reject a vacation request
+- `adjust_vacation_dates(absence_id, new_date_since, new_date_until)` - Adjust vacation length
+- `create_team_member_vacation(user_id, date_since, date_until, ...)` - Create vacation for team member
+- `edit_team_member_entry(entry_id, data)` - Edit team member's time entry
+- `delete_team_member_entry(entry_id)` - Delete team member's time entry
 
 ## Development
 
@@ -368,9 +407,13 @@ clockodo-mcp/
 │   ├── config.py              # Feature flag configuration
 │   ├── hr_analyzer.py         # Pure data analysis functions
 │   ├── services/
-│   │   └── hr_service.py      # Business logic orchestration
+│   │   ├── hr_service.py      # Business logic orchestration
+│   │   ├── user_service.py    # User operations
+│   │   └── team_leader_service.py  # Team leader operations
 │   └── tools/
 │       ├── hr_tools.py        # MCP tool wrappers
+│       ├── user_tools.py      # User tool wrappers
+│       ├── team_leader_tools.py    # Team leader tool wrappers
 │       └── debug_tools.py     # Debugging utilities
 ├── tests/                      # Unit and integration tests
 ├── manual-test/               # Jupyter notebooks for manual testing
