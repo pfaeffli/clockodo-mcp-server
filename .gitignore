@@ -15,3 +15,6 @@ __pycache__/
 licenses.md
 sbom.spdx.json
 .output.txt
+
+# IDEs
+.idea/
