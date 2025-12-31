@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<module type="PYTHON_MODULE" version="4">
-  <component name="NewModuleRootManager">
-    <content url="file://$MODULE_DIR$" />
-    <orderEntry type="jdk" jdkName="Remote 3.13 Docker (sha256:ea7947a95d4e4ebb8c31d63045a183d3a97937c35cf39a9d2185a297ecf75e9e)" jdkType="Python SDK" />
-    <orderEntry type="sourceFolder" forTests="false" />
-  </component>
-</module>

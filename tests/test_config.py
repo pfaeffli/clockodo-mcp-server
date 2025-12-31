@@ -3,7 +3,8 @@ from clockodo_mcp.config import FeatureGroup, ServerConfig
 
 def test_default_config_has_only_hr_readonly():
     config = ServerConfig()
-    assert config.hr_readonly is True
+    # Default is now all False (no role set)
+    assert config.hr_readonly is False
     assert config.user_read is False
     assert config.user_edit is False
     assert config.admin_read is False
@@ -25,7 +26,8 @@ def test_config_from_env_user_preset(monkeypatch):
     monkeypatch.setenv("CLOCKODO_MCP_PRESET", "user")
     config = ServerConfig.from_env()
 
-    assert config.hr_readonly is True
+    # user preset now maps to employee role (no HR analytics)
+    assert config.hr_readonly is False
     assert config.user_read is True
     assert config.user_edit is True
     assert config.admin_read is False
@@ -72,10 +74,10 @@ def test_config_get_enabled_features():
 
     enabled = config.get_enabled_features()
 
-    assert "HR Analytics (Read-only)" in enabled
-    assert "User Time Entries (Read)" in enabled
-    assert "User Time Entries (Edit)" in enabled
-    assert len(enabled) == 3
+    # This is a custom config, should list individual features
+    assert "HR Analytics" in enabled
+    assert "Own Time Tracking" in enabled
+    assert len(enabled) == 2
 
 
 def test_config_env_boolean_parsing(monkeypatch):

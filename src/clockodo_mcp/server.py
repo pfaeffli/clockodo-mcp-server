@@ -18,7 +18,8 @@ from mcp.server.fastmcp import FastMCP  # type: ignore
 
 from .client import ClockodoClient
 from .config import FeatureGroup, ServerConfig
-from .tools import debug_tools, hr_tools, user_tools
+from .services.team_leader_service import TeamLeaderService
+from .tools import debug_tools, hr_tools, team_leader_tools, user_tools
 
 # Pattern #2: Configuration Management
 # Load configuration from environment variables with safe defaults
@@ -79,6 +80,195 @@ def get_raw_user_reports(year: int) -> dict:
 # ==============================================
 
 
+def _register_hr_tools():
+    """Register HR tools."""
+
+    @mcp.tool()
+    def check_overtime_compliance(year: int, max_overtime_hours: float = 80) -> dict:
+        """
+        Check which employees have excessive overtime.
+
+        Args:
+            year: Year to check (e.g., 2024)
+            max_overtime_hours: Maximum allowed overtime hours (default: 80)
+
+        Returns:
+            Dictionary with overtime violations
+        """
+        return hr_tools.check_overtime_compliance(year, max_overtime_hours)
+
+    @mcp.tool()
+    def check_vacation_compliance(
+        year: int, min_vacation_days: float = 10, max_vacation_remaining: float = 20
+    ) -> dict:
+        """
+        Check which employees have vacation compliance issues.
+
+        Args:
+            year: Year to check (e.g., 2024)
+            min_vacation_days: Minimum vacation days that should be used (default: 10)
+            max_vacation_remaining: Maximum vacation days that can remain unused (default: 20)
+
+        Returns:
+            Dictionary with vacation violations
+        """
+        return hr_tools.check_vacation_compliance(
+            year, min_vacation_days, max_vacation_remaining
+        )
+
+    @mcp.tool()
+    def get_hr_summary(
+        year: int,
+        max_overtime_hours: float = 80,
+        min_vacation_days: float = 10,
+        max_vacation_remaining: float = 20,
+    ) -> dict:
+        """
+        Get complete HR compliance summary for all employees.
+
+        Args:
+            year: Year to check (e.g., 2024)
+            max_overtime_hours: Maximum allowed overtime hours (default: 80)
+            min_vacation_days: Minimum vacation days that should be used (default: 10)
+            max_vacation_remaining: Maximum vacation days that can remain unused (default: 20)
+
+        Returns:
+            Dictionary with complete HR summary including all violations
+        """
+        return hr_tools.get_hr_summary(
+            year, max_overtime_hours, min_vacation_days, max_vacation_remaining
+        )
+
+
+def _register_user_read_tools():
+    """Register user read tools."""
+
+    @mcp.tool()
+    def get_my_clock() -> dict:
+        """Get the currently running clock for the authenticated user."""
+        return user_tools.get_my_clock()
+
+    @mcp.tool()
+    def get_my_time_entries(time_since: str, time_until: str) -> dict:
+        """
+        Get time entries for the authenticated user in a given time range.
+
+        Args:
+            time_since: Start time (e.g., 2025-01-01 00:00:00)
+            time_until: End time (e.g., 2025-01-01 23:59:59)
+        """
+        return user_tools.get_my_entries(time_since, time_until)
+
+
+def _register_user_edit_tools():
+    """Register user edit tools."""
+
+    @mcp.tool()
+    def start_my_clock(
+        customers_id: int,
+        services_id: int,
+        billable: int = 1,
+        projects_id: int | None = None,
+        text: str | None = None,
+    ) -> dict:
+        """
+        Start the clock for the authenticated user.
+
+        Args:
+            customers_id: ID of the customer
+            services_id: ID of the service
+            billable: Whether the entry is billable (1) or not (0)
+            projects_id: Optional project ID
+            text: Optional description
+        """
+        return user_tools.start_my_clock(
+            customers_id=customers_id,
+            services_id=services_id,
+            billable=billable,
+            projects_id=projects_id,
+            text=text,
+        )
+
+    @mcp.tool()
+    def stop_my_clock() -> dict:
+        """Stop the currently running clock for the authenticated user."""
+        return user_tools.stop_my_clock()
+
+    @mcp.tool()
+    def add_my_vacation(date_since: str, date_until: str) -> dict:
+        """
+        Add a vacation for the authenticated user.
+
+        Args:
+            date_since: Start date (YYYY-MM-DD)
+            date_until: End date (YYYY-MM-DD)
+        """
+        return user_tools.add_my_vacation(date_since, date_until)
+
+    @mcp.tool()
+    def add_my_time_entry(
+        customers_id: int,
+        services_id: int,
+        time_since: str,
+        time_until: str,
+        billable: int = 1,
+        projects_id: int | None = None,
+        text: str | None = None,
+    ) -> dict:
+        """
+        Add a manual time entry for the authenticated user.
+
+        Args:
+            customers_id: ID of the customer
+            services_id: ID of the service
+            time_since: Start time (e.g., 2025-01-01 09:00:00)
+            time_until: End time (e.g., 2025-01-01 10:00:00)
+            billable: Whether the entry is billable (1) or not (0)
+            projects_id: Optional project ID
+            text: Optional description
+        """
+        return user_tools.add_my_entry(
+            customers_id=customers_id,
+            services_id=services_id,
+            time_since=time_since,
+            time_until=time_until,
+            billable=billable,
+            projects_id=projects_id,
+            text=text,
+        )
+
+    @mcp.tool()
+    def edit_my_time_entry(entry_id: int, data: dict) -> dict:
+        """
+        Edit a time entry for the authenticated user.
+
+        Args:
+            entry_id: ID of the entry to edit
+            data: Dictionary of fields to update (e.g., {"text": "new description"})
+        """
+        return user_tools.edit_my_entry(entry_id, data)
+
+    @mcp.tool()
+    def delete_my_time_entry(entry_id: int) -> dict:
+        """
+        Delete a time entry for the authenticated user.
+
+        Args:
+            entry_id: ID of the entry to delete
+        """
+        return user_tools.delete_my_entry(entry_id)
+
+    @mcp.tool()
+    def delete_my_vacation(absence_id: int) -> dict:
+        """
+        Delete a vacation/absence for the authenticated user.
+
+        Args:
+            absence_id: ID of the absence to delete
+        """
+        return user_tools.delete_my_vacation(absence_id)
+
+
 def register_tools():
     """
     Register MCP tools based on enabled features.
@@ -91,191 +281,21 @@ def register_tools():
 
     # HR Tools (Read-only)
     if config.is_enabled(FeatureGroup.HR_READONLY):
-
-        @mcp.tool()
-        def check_overtime_compliance(
-            year: int, max_overtime_hours: float = 80
-        ) -> dict:
-            """
-            Check which employees have excessive overtime.
-
-            Args:
-                year: Year to check (e.g., 2024)
-                max_overtime_hours: Maximum allowed overtime hours (default: 80)
-
-            Returns:
-                Dictionary with overtime violations
-            """
-            return hr_tools.check_overtime_compliance(year, max_overtime_hours)
-
-        @mcp.tool()
-        def check_vacation_compliance(
-            year: int, min_vacation_days: float = 10, max_vacation_remaining: float = 20
-        ) -> dict:
-            """
-            Check which employees have vacation compliance issues.
-
-            Args:
-                year: Year to check (e.g., 2024)
-                min_vacation_days: Minimum vacation days that should be used (default: 10)
-                max_vacation_remaining: Maximum vacation days that can remain unused (default: 20)
-
-            Returns:
-                Dictionary with vacation violations
-            """
-            return hr_tools.check_vacation_compliance(
-                year, min_vacation_days, max_vacation_remaining
-            )
-
-        @mcp.tool()
-        def get_hr_summary(
-            year: int,
-            max_overtime_hours: float = 80,
-            min_vacation_days: float = 10,
-            max_vacation_remaining: float = 20,
-        ) -> dict:
-            """
-            Get complete HR compliance summary for all employees.
-
-            Args:
-                year: Year to check (e.g., 2024)
-                max_overtime_hours: Maximum allowed overtime hours (default: 80)
-                min_vacation_days: Minimum vacation days that should be used (default: 10)
-                max_vacation_remaining: Maximum vacation days that can remain unused (default: 20)
-
-            Returns:
-                Dictionary with complete HR summary including all violations
-            """
-            return hr_tools.get_hr_summary(
-                year, max_overtime_hours, min_vacation_days, max_vacation_remaining
-            )
+        _register_hr_tools()
 
     # User Read Tools
     if config.is_enabled(FeatureGroup.USER_READ):
-
-        @mcp.tool()
-        def get_my_clock() -> dict:
-            """Get the currently running clock for the authenticated user."""
-            return user_tools.get_my_clock()
-
-        @mcp.tool()
-        def get_my_time_entries(time_since: str, time_until: str) -> dict:
-            """
-            Get time entries for the authenticated user in a given time range.
-
-            Args:
-                time_since: Start time (e.g., 2025-01-01 00:00:00)
-                time_until: End time (e.g., 2025-01-01 23:59:59)
-            """
-            return user_tools.get_my_entries(time_since, time_until)
+        _register_user_read_tools()
 
     # User Edit Tools
     if config.is_enabled(FeatureGroup.USER_EDIT):
+        _register_user_edit_tools()
 
-        @mcp.tool()
-        def start_my_clock(
-            customers_id: int,
-            services_id: int,
-            billable: int = 1,
-            projects_id: int | None = None,
-            text: str | None = None,
-        ) -> dict:
-            """
-            Start the clock for the authenticated user.
-
-            Args:
-                customers_id: ID of the customer
-                services_id: ID of the service
-                billable: Whether the entry is billable (1) or not (0)
-                projects_id: Optional project ID
-                text: Optional description
-            """
-            return user_tools.start_my_clock(
-                customers_id=customers_id,
-                services_id=services_id,
-                billable=billable,
-                projects_id=projects_id,
-                text=text,
-            )
-
-        @mcp.tool()
-        def stop_my_clock() -> dict:
-            """Stop the currently running clock for the authenticated user."""
-            return user_tools.stop_my_clock()
-
-        @mcp.tool()
-        def add_my_vacation(date_since: str, date_until: str) -> dict:
-            """
-            Add a vacation for the authenticated user.
-
-            Args:
-                date_since: Start date (YYYY-MM-DD)
-                date_until: End date (YYYY-MM-DD)
-            """
-            return user_tools.add_my_vacation(date_since, date_until)
-
-        @mcp.tool()
-        def add_my_time_entry(
-            customers_id: int,
-            services_id: int,
-            time_since: str,
-            time_until: str,
-            billable: int = 1,
-            projects_id: int | None = None,
-            text: str | None = None,
-        ) -> dict:
-            """
-            Add a manual time entry for the authenticated user.
-
-            Args:
-                customers_id: ID of the customer
-                services_id: ID of the service
-                time_since: Start time (e.g., 2025-01-01 09:00:00)
-                time_until: End time (e.g., 2025-01-01 10:00:00)
-                billable: Whether the entry is billable (1) or not (0)
-                projects_id: Optional project ID
-                text: Optional description
-            """
-            return user_tools.add_my_entry(
-                customers_id=customers_id,
-                services_id=services_id,
-                time_since=time_since,
-                time_until=time_until,
-                billable=billable,
-                projects_id=projects_id,
-                text=text,
-            )
-
-        @mcp.tool()
-        def edit_my_time_entry(entry_id: int, data: dict) -> dict:
-            """
-            Edit a time entry for the authenticated user.
-
-            Args:
-                entry_id: ID of the entry to edit
-                data: Dictionary of fields to update (e.g., {"text": "new description"})
-            """
-            return user_tools.edit_my_entry(entry_id, data)
-
-        @mcp.tool()
-        def delete_my_time_entry(entry_id: int) -> dict:
-            """
-            Delete a time entry for the authenticated user.
-
-            Args:
-                entry_id: ID of the entry to delete
-            """
-            return user_tools.delete_my_entry(entry_id)
-
-        @mcp.tool()
-        def delete_my_vacation(absence_id: int) -> dict:
-            """
-            Delete a vacation/absence for the authenticated user.
-
-            Args:
-                absence_id: ID of the absence to delete
-            """
-            return user_tools.delete_my_vacation(absence_id)
+    # Team Leader Tools
+    if config.is_enabled(FeatureGroup.TEAM_LEADER):
+        client = ClockodoClient.from_env()
+        team_leader_service = TeamLeaderService(client)
+        team_leader_tools.register_team_leader_tools(mcp, team_leader_service)
 
     # Admin Read Tools
     if config.is_enabled(FeatureGroup.ADMIN_READ):
@@ -327,6 +347,18 @@ def create_server(client=None, test_config: ServerConfig | None = None):
                 self.tool_names.append("get_my_time_entries")
             if test_conf.user_edit:
                 self.tool_names.extend(["add_my_time_entry", "delete_my_vacation"])
+            if test_conf.team_leader:
+                self.tool_names.extend(
+                    [
+                        "list_pending_vacation_requests",
+                        "approve_vacation_request",
+                        "reject_vacation_request",
+                        "adjust_vacation_dates",
+                        "create_team_member_vacation",
+                        "edit_team_member_entry",
+                        "delete_team_member_entry",
+                    ]
+                )
             if test_conf.admin_read:
                 self.tool_names.append("get_all_time_entries")
             if test_conf.admin_edit:
