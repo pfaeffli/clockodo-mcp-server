@@ -2,18 +2,29 @@
 
 MCP server wrapper for the Clockodo time tracking API with configurable feature sets.
 
+[![MCP Badge](https://lobehub.com/badge/mcp/pfaeffli-clockodo-mcp-server)](https://lobehub.com/mcp/pfaeffli-clockodo-mcp-server)
 [![Docker Image](https://ghcr-badge.egpl.dev/pfaeffli/clockodo-mcp-server/latest_tag?trim=major&label=latest)](https://github.com/pfaeffli/clockodo-mcp-server/pkgs/container/clockodo-mcp-server)
 [![Security Scans](https://img.shields.io/badge/security-scanned-green)](https://github.com/pfaeffli/clockodo-mcp-server/actions)
 
 **🐳 Docker Image:** `ghcr.io/pfaeffli/clockodo-mcp-server:latest`
 
 ## Table of Contents
+- [Features](#features)
 - [Architecture & Patterns](#architecture--patterns)
 - [Setup](#setup)
 - [Environment Variables](#environment-variables)
-- [Available Tools](#available-tools)
+- [Available Features](#available-features)
 - [Development](#development)
 - [Manual Testing](#manual-testing)
+
+## Features
+
+This MCP server provides comprehensive time tracking capabilities through:
+
+- **Tools**: 25+ tools for time tracking, HR analytics, and team management
+- **Prompts**: Interactive prompt templates for common workflows
+- **Resources**: Real-time access to time entries, customers, and services
+- **Role-Based Access**: Configurable permission levels (employee, team_leader, hr_analytics, admin)
 
 ## Architecture & Patterns
 
@@ -315,7 +326,7 @@ The following are still supported but deprecated. Use `CLOCKODO_MCP_ROLE` instea
 - `CLOCKODO_MCP_ENABLE_ADMIN_READ=true`
 - `CLOCKODO_MCP_ENABLE_ADMIN_EDIT=true`
 
-## Available Tools
+## Available Features
 
 ### Core Tools (Always Available)
 - `health` - Health check (shows enabled features)
@@ -323,6 +334,17 @@ The following are still supported but deprecated. Use `CLOCKODO_MCP_ROLE` instea
 - `list_customers` - List all customers
 - `list_services` - List all services
 - `get_raw_user_reports(year)` - Get raw API response for debugging
+
+### Prompts (Always Available)
+- `start_tracking` - Start tracking time for a customer and service
+- `stop_tracking` - Stop tracking the current time entry
+- `request_vacation` - Request vacation time
+
+### Resources (Always Available)
+- `clockodo://current-entry` - Get the currently running time entry
+- `clockodo://customers` - Get the list of available customers
+- `clockodo://services` - Get the list of available services
+- `clockodo://recent-entries` - Get recent time entries (last 7 days)
 
 ### HR Analytics (when `HR_READONLY` enabled)
 - `check_overtime_compliance(year, max_overtime_hours)` - Check employee overtime

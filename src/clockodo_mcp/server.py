@@ -14,12 +14,16 @@ Architecture: Server → Service → Client
 
 from __future__ import annotations
 
+import json
+
 from mcp.server.fastmcp import FastMCP  # type: ignore
 
 from .client import ClockodoClient
 from .config import FeatureGroup, ServerConfig
 from .services.team_leader_service import TeamLeaderService
 from .tools import debug_tools, hr_tools, team_leader_tools, user_tools
+from . import prompts as prompt_templates
+from . import resources as resource_handlers
 
 # Pattern #2: Configuration Management
 # Load configuration from environment variables with safe defaults
@@ -73,6 +77,77 @@ def get_raw_user_reports(year: int) -> dict:
         Raw API response with all user report data
     """
     return debug_tools.get_raw_user_reports(year)
+
+
+# ==============================================
+# MCP Prompts
+# ==============================================
+
+
+@mcp.prompt()
+def start_tracking(customer: str, service: str, project: str = "") -> str:
+    """
+    Start tracking time for a customer and service.
+
+    Args:
+        customer: Customer name
+        service: Service/task name
+        project: Optional project name
+    """
+    return prompt_templates.get_start_work_prompt(
+        customer, service, project if project else None
+    )
+
+
+@mcp.prompt()
+def stop_tracking() -> str:
+    """Stop tracking the current time entry."""
+    return prompt_templates.get_stop_work_prompt()
+
+
+@mcp.prompt()
+def request_vacation(start_date: str, end_date: str) -> str:
+    """
+    Request vacation time.
+
+    Args:
+        start_date: Vacation start date (YYYY-MM-DD)
+        end_date: Vacation end date (YYYY-MM-DD)
+    """
+    return prompt_templates.get_vacation_request_prompt(start_date, end_date)
+
+
+# ==============================================
+# MCP Resources
+# ==============================================
+
+
+@mcp.resource("clockodo://current-entry")
+def current_entry() -> str:
+    """Get the currently running time entry."""
+    resource = resource_handlers.get_current_time_entry_resource()
+    return json.dumps(resource["content"], indent=2)
+
+
+@mcp.resource("clockodo://customers")
+def customers_list() -> str:
+    """Get the list of available customers."""
+    resource = resource_handlers.get_customers_resource()
+    return json.dumps(resource["content"], indent=2)
+
+
+@mcp.resource("clockodo://services")
+def services_list() -> str:
+    """Get the list of available services."""
+    resource = resource_handlers.get_services_resource()
+    return json.dumps(resource["content"], indent=2)
+
+
+@mcp.resource("clockodo://recent-entries")
+def recent_entries() -> str:
+    """Get recent time entries (last 7 days)."""
+    resource = resource_handlers.get_recent_entries_resource(days=7)
+    return json.dumps(resource["content"], indent=2)
 
 
 # ==============================================
