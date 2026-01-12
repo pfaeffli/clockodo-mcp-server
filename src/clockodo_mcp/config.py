@@ -48,6 +48,7 @@ class ServerConfig:  # pylint: disable=too-many-instance-attributes
     Transport configuration:
     - CLOCKODO_MCP_TRANSPORT=stdio (default: stdin/stdout for local processes)
     - CLOCKODO_MCP_TRANSPORT=sse (HTTP/SSE for remote access)
+    - CLOCKODO_MCP_HOST=0.0.0.0 (default: bind to all interfaces for Docker)
     - CLOCKODO_MCP_PORT=8000 (default port when using SSE transport)
 
     Legacy configuration (deprecated, but still supported):
@@ -62,6 +63,7 @@ class ServerConfig:  # pylint: disable=too-many-instance-attributes
     admin_read: bool = False
     admin_edit: bool = False
     transport: str = "stdio"
+    host: str = "0.0.0.0"
     port: int = 8000
 
     @classmethod
@@ -81,6 +83,7 @@ class ServerConfig:  # pylint: disable=too-many-instance-attributes
         transport = os.getenv("CLOCKODO_MCP_TRANSPORT", "stdio").lower()
         if transport not in ("stdio", "sse"):
             transport = "stdio"
+        host = os.getenv("CLOCKODO_MCP_HOST", "0.0.0.0")
         port = int(os.getenv("CLOCKODO_MCP_PORT", "8000"))
 
         role_configs = {
@@ -92,6 +95,7 @@ class ServerConfig:  # pylint: disable=too-many-instance-attributes
                 "admin_read": False,
                 "admin_edit": False,
                 "transport": transport,
+                "host": host,
                 "port": port,
             },
             Role.TEAM_LEADER.value: {
@@ -102,6 +106,7 @@ class ServerConfig:  # pylint: disable=too-many-instance-attributes
                 "admin_read": False,
                 "admin_edit": False,
                 "transport": transport,
+                "host": host,
                 "port": port,
             },
             Role.HR_ANALYTICS.value: {
@@ -112,6 +117,7 @@ class ServerConfig:  # pylint: disable=too-many-instance-attributes
                 "admin_read": False,
                 "admin_edit": False,
                 "transport": transport,
+                "host": host,
                 "port": port,
             },
             Role.ADMIN.value: {
@@ -122,6 +128,7 @@ class ServerConfig:  # pylint: disable=too-many-instance-attributes
                 "admin_read": True,
                 "admin_edit": True,
                 "transport": transport,
+                "host": host,
                 "port": port,
             },
         }
@@ -140,6 +147,7 @@ class ServerConfig:  # pylint: disable=too-many-instance-attributes
                 "admin_read": False,
                 "admin_edit": False,
                 "transport": transport,
+                "host": host,
                 "port": port,
             },
             "user": {
@@ -150,6 +158,7 @@ class ServerConfig:  # pylint: disable=too-many-instance-attributes
                 "admin_read": False,
                 "admin_edit": False,
                 "transport": transport,
+                "host": host,
                 "port": port,
             },
             "team_leader": {
@@ -160,6 +169,7 @@ class ServerConfig:  # pylint: disable=too-many-instance-attributes
                 "admin_read": False,
                 "admin_edit": False,
                 "transport": transport,
+                "host": host,
                 "port": port,
             },
             "admin": {
@@ -170,6 +180,7 @@ class ServerConfig:  # pylint: disable=too-many-instance-attributes
                 "admin_read": True,
                 "admin_edit": True,
                 "transport": transport,
+                "host": host,
                 "port": port,
             },
         }
@@ -194,6 +205,7 @@ class ServerConfig:  # pylint: disable=too-many-instance-attributes
             admin_read=get_bool("CLOCKODO_MCP_ENABLE_ADMIN_READ", False),
             admin_edit=get_bool("CLOCKODO_MCP_ENABLE_ADMIN_EDIT", False),
             transport=transport,
+            host=host,
             port=port,
         )
 

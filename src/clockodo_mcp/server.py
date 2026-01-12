@@ -29,8 +29,8 @@ from . import resources as resource_handlers
 # Load configuration from environment variables with safe defaults
 config = ServerConfig.from_env()
 
-# Create MCP server instance with configured port
-mcp = FastMCP("clockodo", port=config.port)
+# Create MCP server instance with configured host and port
+mcp = FastMCP("clockodo", host=config.host, port=config.port)
 
 
 @mcp.tool()

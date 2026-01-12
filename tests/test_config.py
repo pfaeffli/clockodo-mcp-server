@@ -122,3 +122,21 @@ def test_config_transport_case_insensitive(monkeypatch):
     monkeypatch.setenv("CLOCKODO_MCP_TRANSPORT", "SSE")
     config = ServerConfig.from_env()
     assert config.transport == "sse"
+
+
+def test_config_default_host():
+    config = ServerConfig()
+    assert config.host == "0.0.0.0"
+
+
+def test_config_host_from_env(monkeypatch):
+    monkeypatch.setenv("CLOCKODO_MCP_HOST", "127.0.0.1")
+    config = ServerConfig.from_env()
+    assert config.host == "127.0.0.1"
+
+
+def test_config_host_with_role(monkeypatch):
+    monkeypatch.setenv("CLOCKODO_MCP_ROLE", "employee")
+    monkeypatch.setenv("CLOCKODO_MCP_HOST", "localhost")
+    config = ServerConfig.from_env()
+    assert config.host == "localhost"
