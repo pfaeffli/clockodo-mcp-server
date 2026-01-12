@@ -90,3 +90,35 @@ def test_config_env_boolean_parsing(monkeypatch):
     assert config.user_read is True
     assert config.user_edit is True
     assert config.admin_read is True
+
+
+def test_config_default_transport():
+    config = ServerConfig()
+    assert config.transport == "stdio"
+    assert config.port == 8000
+
+
+def test_config_transport_from_env_stdio(monkeypatch):
+    monkeypatch.setenv("CLOCKODO_MCP_TRANSPORT", "stdio")
+    config = ServerConfig.from_env()
+    assert config.transport == "stdio"
+
+
+def test_config_transport_from_env_sse(monkeypatch):
+    monkeypatch.setenv("CLOCKODO_MCP_TRANSPORT", "sse")
+    monkeypatch.setenv("CLOCKODO_MCP_PORT", "9000")
+    config = ServerConfig.from_env()
+    assert config.transport == "sse"
+    assert config.port == 9000
+
+
+def test_config_transport_invalid_defaults_to_stdio(monkeypatch):
+    monkeypatch.setenv("CLOCKODO_MCP_TRANSPORT", "invalid")
+    config = ServerConfig.from_env()
+    assert config.transport == "stdio"
+
+
+def test_config_transport_case_insensitive(monkeypatch):
+    monkeypatch.setenv("CLOCKODO_MCP_TRANSPORT", "SSE")
+    config = ServerConfig.from_env()
+    assert config.transport == "sse"
