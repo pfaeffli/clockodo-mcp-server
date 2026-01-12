@@ -69,8 +69,15 @@ clean:	##@Cleanup Remove build artifacts and cache
 
 vulnerability-scan:	##@Security Run Trivy vulnerability scanner on Docker image
 	@echo "${BLUE}Running Trivy vulnerability scan...${RESET}"
-	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-		aquasec/trivy:latest image --severity CRITICAL,HIGH,MEDIUM clockodo-mcp:latest
+	@if [ -f .trivyignore ]; then \
+		docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+			-v $(PWD)/.trivyignore:/.trivyignore \
+			aquasec/trivy:latest image --ignorefile /.trivyignore \
+			--severity CRITICAL,HIGH,MEDIUM clockodo-mcp:latest; \
+	else \
+		docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+			aquasec/trivy:latest image --severity CRITICAL,HIGH,MEDIUM clockodo-mcp:latest; \
+	fi
 
 docker-scan:	##@Security Run Dockle security best practices scanner
 	@echo "${BLUE}Running Dockle container security scan...${RESET}"
