@@ -35,7 +35,7 @@ class FeatureGroup(str, Enum):
 
 
 @dataclass
-class ServerConfig:
+class ServerConfig:  # pylint: disable=too-many-instance-attributes
     """
     Configuration for MCP server features.
 
@@ -44,6 +44,11 @@ class ServerConfig:
     - CLOCKODO_MCP_ROLE=team_leader (employee + vacation approval & team edits)
     - CLOCKODO_MCP_ROLE=hr_analytics (HR compliance reports only)
     - CLOCKODO_MCP_ROLE=admin (full access)
+
+    Transport configuration:
+    - CLOCKODO_MCP_TRANSPORT=stdio (default: stdin/stdout for local processes)
+    - CLOCKODO_MCP_TRANSPORT=sse (HTTP/SSE for remote access)
+    - CLOCKODO_MCP_PORT=8000 (default port when using SSE transport)
 
     Legacy configuration (deprecated, but still supported):
     - Individual flags: CLOCKODO_MCP_ENABLE_HR_READONLY=true, etc.
@@ -56,6 +61,8 @@ class ServerConfig:
     team_leader: bool = False
     admin_read: bool = False
     admin_edit: bool = False
+    transport: str = "stdio"
+    port: int = 8000
 
     @classmethod
     def from_env(cls) -> "ServerConfig":
@@ -70,6 +77,12 @@ class ServerConfig:
         role = os.getenv("CLOCKODO_MCP_ROLE", "").lower()
 
         # Apply role-based configuration (primary method)
+        # Transport configuration (applies to all roles)
+        transport = os.getenv("CLOCKODO_MCP_TRANSPORT", "stdio").lower()
+        if transport not in ("stdio", "sse"):
+            transport = "stdio"
+        port = int(os.getenv("CLOCKODO_MCP_PORT", "8000"))
+
         role_configs = {
             Role.EMPLOYEE.value: {
                 "hr_readonly": False,
@@ -78,6 +91,8 @@ class ServerConfig:
                 "team_leader": False,
                 "admin_read": False,
                 "admin_edit": False,
+                "transport": transport,
+                "port": port,
             },
             Role.TEAM_LEADER.value: {
                 "hr_readonly": False,
@@ -86,6 +101,8 @@ class ServerConfig:
                 "team_leader": True,
                 "admin_read": False,
                 "admin_edit": False,
+                "transport": transport,
+                "port": port,
             },
             Role.HR_ANALYTICS.value: {
                 "hr_readonly": True,
@@ -94,6 +111,8 @@ class ServerConfig:
                 "team_leader": False,
                 "admin_read": False,
                 "admin_edit": False,
+                "transport": transport,
+                "port": port,
             },
             Role.ADMIN.value: {
                 "hr_readonly": True,
@@ -102,11 +121,13 @@ class ServerConfig:
                 "team_leader": True,
                 "admin_read": True,
                 "admin_edit": True,
+                "transport": transport,
+                "port": port,
             },
         }
 
         if role in role_configs:
-            return cls(**role_configs[role])
+            return cls(**role_configs[role])  # type: ignore[arg-type]
 
         # Legacy preset support
         preset = os.getenv("CLOCKODO_MCP_PRESET", "").lower()
@@ -118,6 +139,8 @@ class ServerConfig:
                 "team_leader": False,
                 "admin_read": False,
                 "admin_edit": False,
+                "transport": transport,
+                "port": port,
             },
             "user": {
                 "hr_readonly": False,
@@ -126,6 +149,8 @@ class ServerConfig:
                 "team_leader": False,
                 "admin_read": False,
                 "admin_edit": False,
+                "transport": transport,
+                "port": port,
             },
             "team_leader": {
                 "hr_readonly": False,
@@ -134,6 +159,8 @@ class ServerConfig:
                 "team_leader": True,
                 "admin_read": False,
                 "admin_edit": False,
+                "transport": transport,
+                "port": port,
             },
             "admin": {
                 "hr_readonly": True,
@@ -142,11 +169,13 @@ class ServerConfig:
                 "team_leader": True,
                 "admin_read": True,
                 "admin_edit": True,
+                "transport": transport,
+                "port": port,
             },
         }
 
         if preset in preset_configs:
-            return cls(**preset_configs[preset])
+            return cls(**preset_configs[preset])  # type: ignore[arg-type]
 
         # Legacy individual flags support
         def get_bool(key: str, default: bool = False) -> bool:
@@ -164,6 +193,8 @@ class ServerConfig:
             team_leader=get_bool("CLOCKODO_MCP_ENABLE_TEAM_LEADER", False),
             admin_read=get_bool("CLOCKODO_MCP_ENABLE_ADMIN_READ", False),
             admin_edit=get_bool("CLOCKODO_MCP_ENABLE_ADMIN_EDIT", False),
+            transport=transport,
+            port=port,
         )
 
     def is_enabled(self, feature: FeatureGroup) -> bool:

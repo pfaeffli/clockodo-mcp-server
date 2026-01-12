@@ -235,6 +235,8 @@ if config.is_enabled(FeatureGroup.ADMIN_EDIT):
 
 ### Option 1: Using Pre-built Docker Image from GitHub Container Registry
 
+#### For Local MCP Clients (Claude Desktop, IDEs) - stdio transport
+
 Add configuration to your IDE's MCP settings (e.g., Claude Desktop):
 
 ```json
@@ -265,6 +267,19 @@ Add configuration to your IDE's MCP settings (e.g., Claude Desktop):
 }
 ```
 
+#### For Remote Access (Web Apps) - HTTP/SSE transport
+
+```bash
+docker run -d \
+  -p 8000:8000 \
+  -e CLOCKODO_API_USER=your@email.com \
+  -e CLOCKODO_API_KEY=your_api_key \
+  -e CLOCKODO_MCP_ROLE=employee \
+  -e CLOCKODO_MCP_TRANSPORT=sse \
+  -e CLOCKODO_MCP_PORT=8000 \
+  ghcr.io/pfaeffli/clockodo-mcp-server:latest
+```
+
 **Available image tags:**
 - `latest` - Latest stable release
 - `v1.0.0`, `v1.0`, `v1` - Semantic version tags
@@ -289,6 +304,12 @@ Add configuration to your IDE's MCP settings (e.g., Claude Desktop):
 - `CLOCKODO_USER_AGENT` - Custom user agent string (default: "clockodo-mcp/unknown")
 - `CLOCKODO_BASE_URL` - API base URL (default: "https://my.clockodo.com/api/v2/")
 - `CLOCKODO_EXTERNAL_APP_CONTACT` - Contact info for external app header (default: API user email)
+
+### Transport Configuration (Optional)
+- `CLOCKODO_MCP_TRANSPORT` - Transport protocol (default: "stdio")
+  - `stdio` - Standard input/output for local processes (Claude Desktop, IDEs)
+  - `sse` - HTTP/SSE for remote access and web applications
+- `CLOCKODO_MCP_PORT` - Port for SSE transport (default: 8000)
 
 ### Role Configuration (Recommended)
 

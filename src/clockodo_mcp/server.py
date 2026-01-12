@@ -29,8 +29,8 @@ from . import resources as resource_handlers
 # Load configuration from environment variables with safe defaults
 config = ServerConfig.from_env()
 
-# Create MCP server instance
-mcp = FastMCP("clockodo")
+# Create MCP server instance with configured port
+mcp = FastMCP("clockodo", port=config.port)
 
 
 @mcp.tool()
@@ -447,5 +447,8 @@ register_tools()
 
 
 def main() -> None:
-    """Run the MCP server using stdio transport."""
-    mcp.run(transport="stdio")
+    """Run the MCP server using configured transport."""
+    if config.transport == "sse":
+        mcp.run(transport="sse")
+    else:
+        mcp.run(transport="stdio")
