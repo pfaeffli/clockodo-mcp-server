@@ -113,21 +113,19 @@ server.py          → Tool registration
 
 ### 5. **API Version Handling**
 
-**Pattern**: Version-Aware Client
+**Pattern**: Resource-Specific Versioning
 
-```python
-def get_user_reports(self, year: int) -> dict:
-    """Handle legacy v1 endpoints explicitly"""
-    # userreports is v1, not v2
-    v1_base_url = self.base_url.replace("/api/v2/", "/api/")
-    url = f"{v1_base_url}userreports"
-```
+Clockodo uses a resource-specific versioning scheme. This server always targets the most recent stable version for each resource:
+- **v4**: Projects, Services, Absences
+- **v3**: Users, Customers
+- **v2**: Clock, Entries
+- **v1**: User Reports (Legacy reports with no newer version available)
 
 **Rules:**
-- Default to v2 API base URL
-- Explicitly handle v1 endpoints where needed
-- Document version differences in code
-- Clear URL construction
+- Base URL is normalized to end with `/api/`
+- All client methods explicitly use the required version prefix (e.g., `v3/users`)
+- Responses are normalized to maintain internal consistency (e.g., mapping `data` key to resource-specific keys)
+- Legacy v1 endpoints are called without a version prefix
 
 ### 6. **Error Handling**
 
@@ -269,6 +267,8 @@ Add configuration to your IDE's MCP settings (e.g., Claude Desktop):
 
 #### For Remote Access (Web Apps) - HTTP/SSE transport
 
+> **⚠️ Note:** SSE transport is currently experimental and has known issues. Not recommended for production use.
+
 ```bash
 docker run -d \
   -p 8000:8000 \
@@ -276,6 +276,7 @@ docker run -d \
   -e CLOCKODO_API_KEY=your_api_key \
   -e CLOCKODO_MCP_ROLE=employee \
   -e CLOCKODO_MCP_TRANSPORT=sse \
+  -e CLOCKODO_MCP_HOST=0.0.0.0 \
   -e CLOCKODO_MCP_PORT=8000 \
   ghcr.io/pfaeffli/clockodo-mcp-server:latest
 ```
@@ -307,9 +308,12 @@ docker run -d \
 
 ### Transport Configuration (Optional)
 - `CLOCKODO_MCP_TRANSPORT` - Transport protocol (default: "stdio")
-  - `stdio` - Standard input/output for local processes (Claude Desktop, IDEs)
-  - `sse` - HTTP/SSE for remote access and web applications
+  - `stdio` - Standard input/output for local processes (Claude Desktop, IDEs) **[Recommended]**
+  - `sse` - HTTP/SSE for remote access **[Experimental - Known Issues]**
+- `CLOCKODO_MCP_HOST` - Host address to bind to (default: "0.0.0.0")
 - `CLOCKODO_MCP_PORT` - Port for SSE transport (default: 8000)
+
+> **⚠️ SSE Transport Limitation:** The SSE transport is experimental and currently has issues with the MCP library (v1.25.0). The server accepts connections and messages but does not properly send responses back through the event stream, causing client initialization timeouts. **Use stdio transport for production.** SSE support depends on upstream fixes in the MCP library.
 
 ### Role Configuration (Recommended)
 
@@ -354,6 +358,7 @@ The following are still supported but deprecated. Use `CLOCKODO_MCP_ROLE` instea
 - `list_users` - List all Clockodo users
 - `list_customers` - List all customers
 - `list_services` - List all services
+- `list_projects` - List all projects
 - `get_raw_user_reports(year)` - Get raw API response for debugging
 
 ### Prompts (Always Available)
@@ -365,6 +370,7 @@ The following are still supported but deprecated. Use `CLOCKODO_MCP_ROLE` instea
 - `clockodo://current-entry` - Get the currently running time entry
 - `clockodo://customers` - Get the list of available customers
 - `clockodo://services` - Get the list of available services
+- `clockodo://projects` - Get the list of available projects
 - `clockodo://recent-entries` - Get recent time entries (last 7 days)
 
 ### HR Analytics (when `HR_READONLY` enabled)

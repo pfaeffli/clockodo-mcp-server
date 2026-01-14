@@ -17,14 +17,14 @@ def client():
     return ClockodoClient(
         api_user="test@example.com",
         api_key="test_key",
-        base_url="https://my.clockodo.com/api/v2/",
+        base_url="https://my.clockodo.com/api/",
     )
 
 
 @pytest.fixture
 def service(client):
     """Create a test team leader service."""
-    return TeamLeaderService(client)
+    return TeamLeaderService(lambda: client)
 
 
 @respx.mock
@@ -39,7 +39,7 @@ def test_approve_vacation(service, client):
         }
     }
 
-    respx.put(f"{client.base_url}absences/123").mock(
+    respx.put(f"{client.base_url}v4/absences/123").mock(
         return_value=Response(200, json=mock_response)
     )
 
@@ -61,7 +61,7 @@ def test_reject_vacation(service, client):
         }
     }
 
-    respx.put(f"{client.base_url}absences/123").mock(
+    respx.put(f"{client.base_url}v4/absences/123").mock(
         return_value=Response(200, json=mock_response)
     )
 
@@ -103,7 +103,7 @@ def test_list_pending_vacations(service, client):
         ]
     }
 
-    respx.get(f"{client.base_url}absences").mock(
+    respx.get(f"{client.base_url}v4/absences").mock(
         return_value=Response(200, json=mock_response)
     )
 
@@ -128,7 +128,7 @@ def test_edit_team_entry(service, client):
         }
     }
 
-    respx.put(f"{client.base_url}entries/456").mock(
+    respx.put(f"{client.base_url}v2/entries/456").mock(
         return_value=Response(200, json=mock_response)
     )
 
@@ -143,7 +143,7 @@ def test_delete_team_entry(service, client):
     """Test deleting a team member's time entry."""
     mock_response = {"success": True}
 
-    respx.delete(f"{client.base_url}entries/456").mock(
+    respx.delete(f"{client.base_url}v2/entries/456").mock(
         return_value=Response(200, json=mock_response)
     )
 
@@ -163,7 +163,7 @@ def test_adjust_vacation_length(service, client):
         }
     }
 
-    respx.put(f"{client.base_url}absences/123").mock(
+    respx.put(f"{client.base_url}v4/absences/123").mock(
         return_value=Response(200, json=mock_response)
     )
 
@@ -188,7 +188,7 @@ def test_create_team_vacation_auto_approve(service, client):
         }
     }
 
-    respx.post(f"{client.base_url}absences").mock(
+    respx.post(f"{client.base_url}v4/absences").mock(
         return_value=Response(200, json=mock_response)
     )
 
@@ -217,7 +217,7 @@ def test_create_team_vacation_no_auto_approve(service, client):
         }
     }
 
-    respx.post(f"{client.base_url}absences").mock(
+    respx.post(f"{client.base_url}v4/absences").mock(
         return_value=Response(200, json=mock_response)
     )
 

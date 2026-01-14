@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from dataclasses import dataclass
 
 import httpx
@@ -21,7 +22,7 @@ import httpx
 logger = logging.getLogger(__name__)
 
 
-DEFAULT_BASE_URL = "https://my.clockodo.com/api/v2/"
+DEFAULT_BASE_URL = "https://my.clockodo.com/api/"
 
 
 @dataclass
@@ -40,6 +41,24 @@ class ClockodoClient:
     user_agent: str | None = None
     base_url: str = DEFAULT_BASE_URL
     external_app_contact: str | None = None
+
+    def __post_init__(self):
+        """Normalize base_url to always end with /api/ and no version prefix."""
+        # Ensure trailing slash
+        if not self.base_url.endswith("/"):
+            self.base_url += "/"
+
+        # Strip version suffixes like /v2/, /v3/, /v4/
+        self.base_url = re.sub(r"v\d+/?$", "", self.base_url)
+
+        # Ensure it ends with /api/
+        if not self.base_url.endswith("/api/"):
+            if self.base_url.endswith("/api"):
+                self.base_url += "/"
+            elif "/api/" not in self.base_url:
+                # If it's just a domain or path without /api/, append it
+                # but only if it's not already there
+                self.base_url = self.base_url.rstrip("/") + "/api/"
 
     @classmethod
     def from_env(cls) -> "ClockodoClient":
@@ -148,30 +167,55 @@ class ClockodoClient:
 
     def list_users(self) -> dict:
         """
-        List all users from Clockodo.
+        List all users from Clockodo (v3 API).
 
         Returns:
             Dictionary with 'users' key containing list of user objects
         """
-        return self._request("GET", "users")
+        resp = self._request("GET", "v3/users")
+        # Normalize response (pattern change: 'data' instead of 'users')
+        if "data" in resp and "users" not in resp:
+            resp["users"] = resp["data"]
+        return resp
 
     def list_customers(self) -> dict:
         """
-        List all customers from Clockodo.
+        List all customers from Clockodo (v3 API).
 
         Returns:
             Dictionary with 'customers' key containing list of customer objects
         """
-        return self._request("GET", "customers")
+        resp = self._request("GET", "v3/customers")
+        # Normalize response (pattern change: 'data' instead of 'customers')
+        if "data" in resp and "customers" not in resp:
+            resp["customers"] = resp["data"]
+        return resp
 
     def list_services(self) -> dict:
         """
-        List all services from Clockodo.
+        List all services from Clockodo (v4 API).
 
         Returns:
             Dictionary with 'services' key containing list of service objects
         """
-        return self._request("GET", "services")
+        resp = self._request("GET", "v4/services")
+        # Normalize v4 response (pattern change: 'data' instead of 'services')
+        if "data" in resp and "services" not in resp:
+            resp["services"] = resp["data"]
+        return resp
+
+    def list_projects(self) -> dict:
+        """
+        List all projects from Clockodo (v4 API).
+
+        Returns:
+            Dictionary with 'projects' key containing list of project objects
+        """
+        resp = self._request("GET", "v4/projects")
+        # Normalize v4 response (pattern change: 'data' instead of 'projects')
+        if "data" in resp and "projects" not in resp:
+            resp["projects"] = resp["data"]
+        return resp
 
     def get_user_reports(
         self, year: int, user_id: int | None = None, type_level: int = 0
@@ -180,7 +224,7 @@ class ClockodoClient:
         Get user reports for a specific year.
 
         Follows Pattern #5 (API Version Handling):
-        - userreports is a legacy v1 endpoint
+        - userreports is a legacy v1 endpoint (no v2+ successor exists for this report)
         - Explicitly uses /api/ instead of /api/v2/
 
         Args:
@@ -195,9 +239,8 @@ class ClockodoClient:
         if user_id is not None:
             params["users_id"] = user_id
 
-        # userreports is v1 API: /api/userreports not /api/v2/userreports
-        v1_base_url = self.base_url.replace("/api/v2/", "/api/")
-        url = f"{v1_base_url}userreports"
+        # userreports is v1 API: /api/userreports
+        url = f"{self.base_url}userreports"
 
         resp = httpx.request(
             method="GET",
@@ -222,12 +265,12 @@ class ClockodoClient:
         return resp.json()
 
     # ==============================================
-    # Clock Operations (v2)
+    # Clock Operations (v2 is the latest as of 2026-01-14)
     # ==============================================
 
     def get_clock(self) -> dict:
         """Get the currently running clock."""
-        return self._request("GET", "clock")
+        return self._request("GET", "v2/clock")
 
     def clock_start(
         self,
@@ -257,7 +300,7 @@ class ClockodoClient:
             data["projects_id"] = projects_id
         if text is not None:
             data["text"] = text
-        return self._request("POST", "clock", json_data=data)
+        return self._request("POST", "v2/clock", json_data=data)
 
     def clock_stop(self, entry_id: int) -> dict:
         """
@@ -266,10 +309,10 @@ class ClockodoClient:
         Args:
             entry_id: ID of the running clock entry to stop
         """
-        return self._request("DELETE", f"clock/{entry_id}")
+        return self._request("DELETE", f"v2/clock/{entry_id}")
 
     # ==============================================
-    # Entries (v2)
+    # Entries (v2 is the latest as of 2026-01-14)
     # ==============================================
 
     def list_entries(
@@ -292,7 +335,7 @@ class ClockodoClient:
         }
         if user_id is not None:
             params["filter[users_id]"] = user_id
-        return self._request("GET", "entries", params=params)
+        return self._request("GET", "v2/entries", params=params)
 
     def create_entry(
         self,
@@ -331,23 +374,27 @@ class ClockodoClient:
             data["text"] = text
         if user_id is not None:
             data["users_id"] = user_id
-        return self._request("POST", "entries", json_data=data)
+        return self._request("POST", "v2/entries", json_data=data)
 
     def edit_entry(self, entry_id: int, data: dict) -> dict:
         """Edit an existing time entry."""
-        return self._request("PUT", f"entries/{entry_id}", json_data=data)
+        return self._request("PUT", f"v2/entries/{entry_id}", json_data=data)
 
     def delete_entry(self, entry_id: int) -> dict:
         """Delete a time entry."""
-        return self._request("DELETE", f"entries/{entry_id}")
+        return self._request("DELETE", f"v2/entries/{entry_id}")
 
     # ==============================================
-    # Absences (v2)
+    # Absences (v4)
     # ==============================================
 
     def list_absences(self, year: int) -> dict:
-        """List absences for a year."""
-        return self._request("GET", "absences", params={"year": year})
+        """List absences for a year (v4 API)."""
+        resp = self._request("GET", "v4/absences", params={"filter[year]": year})
+        # Normalize v4 response
+        if "data" in resp and "absences" not in resp:
+            resp["absences"] = resp["data"]
+        return resp
 
     def create_absence(
         self,
@@ -376,7 +423,7 @@ class ClockodoClient:
             data["users_id"] = user_id
         if status is not None:
             data["status"] = status
-        return self._request("POST", "absences", json_data=data)
+        return self._request("POST", "v4/absences", json_data=data)
 
     def edit_absence(self, absence_id: int, data: dict) -> dict:
         """
@@ -385,20 +432,9 @@ class ClockodoClient:
         Args:
             absence_id: Absence ID
             data: Dictionary with fields to update
-
-        Status workflow:
-        - 0 (enquired) → 1 (approved), 2 (declined), or 4 (request cancelled)
-        - 1 (approved) → 3 (approval cancelled)
-        - Statuses 2, 3, 4 can be deleted (with admin rights)
         """
-        return self._request("PUT", f"absences/{absence_id}", json_data=data)
+        return self._request("PUT", f"v4/absences/{absence_id}", json_data=data)
 
     def delete_absence(self, absence_id: int) -> dict:
-        """
-        Delete an absence.
-
-        Note: The absence must be in status 2 (declined), 3 (approval cancelled),
-              or 4 (request cancelled) before deletion.
-              Requires admin rights for absence administration.
-        """
-        return self._request("DELETE", f"absences/{absence_id}")
+        """Delete an absence."""
+        return self._request("DELETE", f"v4/absences/{absence_id}")

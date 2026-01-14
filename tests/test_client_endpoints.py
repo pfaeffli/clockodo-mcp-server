@@ -8,7 +8,7 @@ from clockodo_mcp.client import DEFAULT_BASE_URL, ClockodoClient
 def test_list_users_calls_clockodo_and_returns_json(monkeypatch):
     client = ClockodoClient(api_user="u@example.com", api_key="k", user_agent="ua")
 
-    route = respx.get(f"{DEFAULT_BASE_URL}users").mock(
+    route = respx.get(f"{DEFAULT_BASE_URL}v3/users").mock(
         return_value=httpx.Response(200, json={"users": [{"id": 1, "name": "Alice"}]})
     )
 
@@ -28,12 +28,28 @@ def test_list_users_calls_clockodo_and_returns_json(monkeypatch):
 
 
 @respx.mock
+def test_list_users_normalization():
+    """Test that list_users handles 'data' key in response."""
+    client = ClockodoClient(api_user="u", api_key="k")
+
+    # Mock response with 'data' instead of 'users'
+    respx.get(f"{DEFAULT_BASE_URL}v3/users").mock(
+        return_value=httpx.Response(
+            200,
+            json={"data": [{"id": 1, "name": "Alice"}], "paging": {"count_items": 1}},
+        )
+    )
+
+    resp = client.list_users()
+    assert "users" in resp
+    assert resp["users"][0]["name"] == "Alice"
+
+
+@respx.mock
 def test_get_user_reports_calls_clockodo_with_year_parameter():
     client = ClockodoClient(api_user="u@example.com", api_key="k", user_agent="ua")
 
-    # userreports is a v1 endpoint: /api/userreports not /api/v2/userreports
-    v1_url = DEFAULT_BASE_URL.replace("/api/v2/", "/api/")
-    route = respx.get(f"{v1_url}userreports").mock(
+    route = respx.get(f"{DEFAULT_BASE_URL}userreports").mock(
         return_value=httpx.Response(
             200,
             json={
@@ -75,9 +91,7 @@ def test_get_user_reports_calls_clockodo_with_year_parameter():
 def test_get_user_reports_with_user_id_parameter():
     client = ClockodoClient(api_user="u@example.com", api_key="k")
 
-    # userreports is a v1 endpoint: /api/userreports not /api/v2/userreports
-    v1_url = DEFAULT_BASE_URL.replace("/api/v2/", "/api/")
-    route = respx.get(f"{v1_url}userreports").mock(
+    route = respx.get(f"{DEFAULT_BASE_URL}userreports").mock(
         return_value=httpx.Response(
             200,
             json={
@@ -105,7 +119,7 @@ def test_get_user_reports_with_user_id_parameter():
 def test_list_customers_calls_clockodo_and_returns_json():
     client = ClockodoClient(api_user="u@example.com", api_key="k", user_agent="ua")
 
-    route = respx.get(f"{DEFAULT_BASE_URL}customers").mock(
+    route = respx.get(f"{DEFAULT_BASE_URL}v3/customers").mock(
         return_value=httpx.Response(
             200, json={"customers": [{"id": 100, "name": "Customer A"}]}
         )
@@ -118,12 +132,33 @@ def test_list_customers_calls_clockodo_and_returns_json():
 
 
 @respx.mock
+def test_list_customers_normalization():
+    """Test that list_customers handles 'data' key in response."""
+    client = ClockodoClient(api_user="u", api_key="k")
+
+    # Mock response with 'data' instead of 'customers'
+    respx.get(f"{DEFAULT_BASE_URL}v3/customers").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "data": [{"id": 100, "name": "Customer A"}],
+                "paging": {"count_items": 1},
+            },
+        )
+    )
+
+    resp = client.list_customers()
+    assert "customers" in resp
+    assert resp["customers"][0]["name"] == "Customer A"
+
+
+@respx.mock
 def test_list_services_calls_clockodo_and_returns_json():
     client = ClockodoClient(api_user="u@example.com", api_key="k", user_agent="ua")
 
-    route = respx.get(f"{DEFAULT_BASE_URL}services").mock(
+    route = respx.get(f"{DEFAULT_BASE_URL}v4/services").mock(
         return_value=httpx.Response(
-            200, json={"services": [{"id": 200, "name": "Service X"}]}
+            200, json={"data": [{"id": 200, "name": "Service X"}]}
         )
     )
 
