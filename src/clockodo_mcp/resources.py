@@ -113,6 +113,32 @@ def get_services_resource() -> dict:
     }
 
 
+def get_projects_resource() -> dict:
+    """
+    Get the list of projects as a resource.
+
+    Returns:
+        Dictionary with projects data
+    """
+    client = ClockodoClient.from_env()
+    projects = client.list_projects()
+
+    project_list = projects.get("projects", [])
+    project_names = [p.get("name", "Unknown") for p in project_list]
+
+    return {
+        "uri": "clockodo://projects",
+        "name": "Projects List",
+        "description": f"Available projects ({len(project_list)} total)",
+        "mimeType": "application/json",
+        "content": {
+            "count": len(project_list),
+            "projects": project_list,
+            "names": project_names,
+        },
+    }
+
+
 def get_recent_entries_resource(days: int = 7) -> dict:
     """
     Get recent time entries as a resource.

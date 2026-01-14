@@ -14,7 +14,7 @@ def test_clock_start():
     # Requires billable, customers_id, services_id
     payload = {"customers_id": 123, "services_id": 456, "billable": 1}
 
-    route = respx.post(f"{DEFAULT_BASE_URL}clock").mock(
+    route = respx.post(f"{DEFAULT_BASE_URL}v2/clock").mock(
         return_value=httpx.Response(
             201, json={"running": {"id": 1001, "customers_id": 123}}
         )
@@ -33,7 +33,7 @@ def test_clock_stop():
 
     # Clockodo API: DELETE /api/v2/clock/[ID]
     entry_id = 1001
-    route = respx.delete(f"{DEFAULT_BASE_URL}clock/{entry_id}").mock(
+    route = respx.delete(f"{DEFAULT_BASE_URL}v2/clock/{entry_id}").mock(
         return_value=httpx.Response(
             200, json={"stopped": {"id": 1001}, "running": None}
         )
@@ -49,7 +49,7 @@ def test_clock_stop():
 def test_get_clock():
     client = ClockodoClient(api_user="u@example.com", api_key="k")
 
-    route = respx.get(f"{DEFAULT_BASE_URL}clock").mock(
+    route = respx.get(f"{DEFAULT_BASE_URL}v2/clock").mock(
         return_value=httpx.Response(200, json={"running": None})
     )
 
@@ -63,7 +63,7 @@ def test_get_clock():
 def test_create_absence():
     client = ClockodoClient(api_user="u@example.com", api_key="k")
 
-    route = respx.post(f"{DEFAULT_BASE_URL}absences").mock(
+    route = respx.post(f"{DEFAULT_BASE_URL}v4/absences").mock(
         return_value=httpx.Response(201, json={"absence": {"id": 2001}})
     )
 
@@ -85,7 +85,7 @@ def test_create_absence():
 def test_create_entry():
     client = ClockodoClient(api_user="u@example.com", api_key="k")
 
-    route = respx.post(f"{DEFAULT_BASE_URL}entries").mock(
+    route = respx.post(f"{DEFAULT_BASE_URL}v2/entries").mock(
         return_value=httpx.Response(201, json={"entry": {"id": 3001}})
     )
 
@@ -105,7 +105,7 @@ def test_create_entry():
 def test_list_entries():
     client = ClockodoClient(api_user="u@example.com", api_key="k")
 
-    route = respx.get(f"{DEFAULT_BASE_URL}entries").mock(
+    route = respx.get(f"{DEFAULT_BASE_URL}v2/entries").mock(
         return_value=httpx.Response(
             200, json={"entries": [{"id": 3001, "text": "Test entry"}]}
         )
@@ -128,7 +128,7 @@ def test_list_entries():
 def test_edit_absence():
     client = ClockodoClient(api_user="u@example.com", api_key="k")
 
-    route = respx.put(f"{DEFAULT_BASE_URL}absences/2001").mock(
+    route = respx.put(f"{DEFAULT_BASE_URL}v4/absences/2001").mock(
         return_value=httpx.Response(200, json={"absence": {"id": 2001, "status": 4}})
     )
 
@@ -144,7 +144,7 @@ def test_edit_absence():
 def test_list_absences():
     client = ClockodoClient(api_user="u@example.com", api_key="k")
 
-    route = respx.get(f"{DEFAULT_BASE_URL}absences").mock(
+    route = respx.get(f"{DEFAULT_BASE_URL}v4/absences").mock(
         return_value=httpx.Response(
             200, json={"absences": [{"id": 2001, "type": 1, "status": 1}]}
         )
@@ -153,8 +153,7 @@ def test_list_absences():
     data = client.list_absences(year=2025)
 
     assert route.called
-    assert route.calls[0].request.url.params.get("year") == "2025"
-    assert len(data["absences"]) == 1
+    assert route.calls[0].request.url.params.get("filter[year]") == "2025"
     assert data["absences"][0]["id"] == 2001
 
 
@@ -162,7 +161,7 @@ def test_list_absences():
 def test_edit_entry():
     client = ClockodoClient(api_user="u@example.com", api_key="k")
 
-    route = respx.put(f"{DEFAULT_BASE_URL}entries/3001").mock(
+    route = respx.put(f"{DEFAULT_BASE_URL}v2/entries/3001").mock(
         return_value=httpx.Response(
             200, json={"entry": {"id": 3001, "text": "Updated"}}
         )
@@ -180,7 +179,7 @@ def test_edit_entry():
 def test_delete_entry():
     client = ClockodoClient(api_user="u@example.com", api_key="k")
 
-    route = respx.delete(f"{DEFAULT_BASE_URL}entries/3001").mock(
+    route = respx.delete(f"{DEFAULT_BASE_URL}v2/entries/3001").mock(
         return_value=httpx.Response(200, json={"success": True})
     )
 
@@ -194,7 +193,7 @@ def test_delete_entry():
 def test_delete_absence():
     client = ClockodoClient(api_user="u@example.com", api_key="k")
 
-    route = respx.delete(f"{DEFAULT_BASE_URL}absences/2001").mock(
+    route = respx.delete(f"{DEFAULT_BASE_URL}v4/absences/2001").mock(
         return_value=httpx.Response(200, json={"success": True})
     )
 
@@ -209,7 +208,7 @@ def test_clock_start_with_all_optional_params():
     """Test clock start with all optional parameters."""
     client = ClockodoClient(api_user="u@example.com", api_key="k")
 
-    route = respx.post(f"{DEFAULT_BASE_URL}clock").mock(
+    route = respx.post(f"{DEFAULT_BASE_URL}v2/clock").mock(
         return_value=httpx.Response(
             201, json={"running": {"id": 1002, "customers_id": 123}}
         )
@@ -239,7 +238,7 @@ def test_create_absence_with_user_and_status():
     """Test create absence with optional user_id and status."""
     client = ClockodoClient(api_user="u@example.com", api_key="k")
 
-    route = respx.post(f"{DEFAULT_BASE_URL}absences").mock(
+    route = respx.post(f"{DEFAULT_BASE_URL}v4/absences").mock(
         return_value=httpx.Response(201, json={"absence": {"id": 2002}})
     )
 
@@ -264,7 +263,7 @@ def test_create_entry_with_all_optional_params():
     """Test create entry with all optional parameters."""
     client = ClockodoClient(api_user="u@example.com", api_key="k")
 
-    route = respx.post(f"{DEFAULT_BASE_URL}entries").mock(
+    route = respx.post(f"{DEFAULT_BASE_URL}v2/entries").mock(
         return_value=httpx.Response(201, json={"entry": {"id": 3002}})
     )
 
@@ -289,11 +288,31 @@ def test_create_entry_with_all_optional_params():
 
 
 @respx.mock
+def test_edit_entry_unset_project():
+    """Test editing an entry to unset the project (set projects_id to None)."""
+    client = ClockodoClient(api_user="u@example.com", api_key="k")
+
+    route = respx.put(f"{DEFAULT_BASE_URL}v2/entries/3001").mock(
+        return_value=httpx.Response(
+            200, json={"entry": {"id": 3001, "projects_id": None}}
+        )
+    )
+
+    data = client.edit_entry(entry_id=3001, data={"projects_id": None})
+
+    assert route.called
+    request_body = json.loads(route.calls[0].request.content)
+    assert "projects_id" in request_body
+    assert request_body["projects_id"] is None
+    assert data["entry"]["projects_id"] is None
+
+
+@respx.mock
 def test_list_entries_without_user_filter():
     """Test list entries without user_id filter."""
     client = ClockodoClient(api_user="u@example.com", api_key="k")
 
-    route = respx.get(f"{DEFAULT_BASE_URL}entries").mock(
+    route = respx.get(f"{DEFAULT_BASE_URL}v2/entries").mock(
         return_value=httpx.Response(200, json={"entries": [{"id": 3001}, {"id": 3002}]})
     )
 

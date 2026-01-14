@@ -154,6 +154,43 @@ def test_get_services_resource_empty(mock_client):
     assert result["content"]["names"] == []
 
 
+def test_get_projects_resource(mock_client):
+    """Test projects resource."""
+    mock_client.list_projects.return_value = {
+        "projects": [
+            {"id": 1, "name": "Project Alpha"},
+            {"id": 2, "name": "Project Beta"},
+        ]
+    }
+
+    with patch(
+        "clockodo_mcp.resources.ClockodoClient.from_env", return_value=mock_client
+    ):
+        result = resources.get_projects_resource()
+
+    assert result["uri"] == "clockodo://projects"
+    assert result["name"] == "Projects List"
+    assert "2 total" in result["description"]
+    assert result["content"]["count"] == 2
+    assert "Project Alpha" in result["content"]["names"]
+    assert "Project Beta" in result["content"]["names"]
+    assert len(result["content"]["projects"]) == 2
+
+
+def test_get_projects_resource_empty(mock_client):
+    """Test projects resource with no projects."""
+    mock_client.list_projects.return_value = {"projects": []}
+
+    with patch(
+        "clockodo_mcp.resources.ClockodoClient.from_env", return_value=mock_client
+    ):
+        result = resources.get_projects_resource()
+
+    assert result["content"]["count"] == 0
+    assert result["content"]["projects"] == []
+    assert result["content"]["names"] == []
+
+
 def test_get_recent_entries_resource(mock_client):
     """Test recent entries resource."""
     mock_client.list_entries.return_value = {

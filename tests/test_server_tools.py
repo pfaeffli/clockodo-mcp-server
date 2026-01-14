@@ -59,6 +59,19 @@ def test_server_list_services_tool_calls_client():
     assert result["services"][0]["id"] == 200
 
 
+def test_server_list_projects_tool_calls_client():
+    mock_client = Mock()
+    mock_client.list_projects.return_value = {"projects": [{"id": 300}]}
+
+    server = create_server(client=mock_client)
+
+    # call the tool
+    result = server.tools["list_projects"]()
+
+    mock_client.list_projects.assert_called_once_with()
+    assert result["projects"][0]["id"] == 300
+
+
 @patch("clockodo_mcp.tools.hr_tools.ClockodoClient")
 def test_check_overtime_compliance_returns_violations(mock_client_class):
     mock_client = Mock()

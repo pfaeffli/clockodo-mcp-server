@@ -29,8 +29,8 @@ from . import resources as resource_handlers
 # Load configuration from environment variables with safe defaults
 config = ServerConfig.from_env()
 
-# Create MCP server instance with configured port
-mcp = FastMCP("clockodo", port=config.port)
+# Create MCP server instance with configured host and port
+mcp = FastMCP("clockodo", host=config.host, port=config.port)
 
 
 @mcp.tool()
@@ -61,6 +61,13 @@ def list_services() -> dict:
     """List all services from Clockodo API."""
     client = ClockodoClient.from_env()
     return client.list_services()
+
+
+@mcp.tool()
+def list_projects() -> dict:
+    """List all projects from Clockodo API."""
+    client = ClockodoClient.from_env()
+    return client.list_projects()
 
 
 @mcp.tool()
@@ -140,6 +147,13 @@ def customers_list() -> str:
 def services_list() -> str:
     """Get the list of available services."""
     resource = resource_handlers.get_services_resource()
+    return json.dumps(resource["content"], indent=2)
+
+
+@mcp.resource("clockodo://projects")
+def projects_list() -> str:
+    """Get the list of available projects."""
+    resource = resource_handlers.get_projects_resource()
     return json.dumps(resource["content"], indent=2)
 
 
@@ -368,8 +382,8 @@ def register_tools():
 
     # Team Leader Tools
     if config.is_enabled(FeatureGroup.TEAM_LEADER):
-        client = ClockodoClient.from_env()
-        team_leader_service = TeamLeaderService(client)
+        # Use lazy client initialization to avoid crashes on invalid credentials
+        team_leader_service = TeamLeaderService(ClockodoClient.from_env)
         team_leader_tools.register_team_leader_tools(mcp, team_leader_service)
 
     # Admin Read Tools
@@ -401,12 +415,14 @@ def create_server(client=None, test_config: ServerConfig | None = None):
                 "list_users": lambda: client.list_users() if client else {},
                 "list_customers": lambda: client.list_customers() if client else {},
                 "list_services": lambda: client.list_services() if client else {},
+                "list_projects": lambda: client.list_projects() if client else {},
             }
             self.tool_names = [
                 "health",
                 "list_users",
                 "list_customers",
                 "list_services",
+                "list_projects",
             ]
 
             # Add tool names based on config

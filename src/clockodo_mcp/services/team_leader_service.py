@@ -11,7 +11,7 @@ Pattern: Service Layer (Layer 2)
 """
 
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 if TYPE_CHECKING:
     from ..client import ClockodoClient
@@ -27,8 +27,22 @@ class TeamLeaderService:
     - Adjust vacation days or use overtime
     """
 
-    def __init__(self, client: ClockodoClient):
-        self.client = client
+    def __init__(self, client_factory: Callable[[], ClockodoClient]):
+        """
+        Initialize with a client factory for lazy initialization.
+
+        Args:
+            client_factory: Callable that returns a ClockodoClient instance
+        """
+        self._client_factory = client_factory
+        self._client: ClockodoClient | None = None
+
+    @property
+    def client(self) -> ClockodoClient:
+        """Lazy-load the client on first access."""
+        if self._client is None:
+            self._client = self._client_factory()
+        return self._client
 
     def approve_vacation(self, absence_id: int) -> dict:
         """

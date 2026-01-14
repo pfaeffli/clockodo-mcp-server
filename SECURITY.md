@@ -30,14 +30,14 @@ You should receive an acknowledgment within 48 hours.
 
 ### Transport Security
 
-**stdio (default)**: No network exposure - safe for local use with Claude Desktop/IDEs
+**stdio (default)**: No network exposure - safe for local use with Claude Desktop/IDEs. **Recommended for production.**
 
-**sse (HTTP/SSE)**: For remote access - requires additional security:
+**sse (HTTP/SSE)**: **Experimental - has known issues.** The SSE transport currently does not properly handle MCP initialization (MCP library v1.25.0 limitation). For remote access, requires:
 - Deploy behind reverse proxy with HTTPS (nginx, Caddy, Traefik)
 - Implement authentication (OAuth, JWT, API keys)
 - Add rate limiting and firewall rules
 
-⚠️ **Warning**: SSE mode has no built-in authentication. Must run behind authenticated reverse proxy.
+⚠️ **Warning**: SSE mode has no built-in authentication and is not production-ready due to upstream MCP library limitations.
 
 ### Role-Based Access Control
 
