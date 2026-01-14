@@ -18,3 +18,4 @@ sbom.spdx.json
 
 # IDEs
 .idea/
+src/clockodo_mcp/_version.py

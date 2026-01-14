@@ -8,6 +8,7 @@ services:
     working_dir: /app
     environment:
       - PYTHONPATH=/app/src
+      - MYPY_CACHE_DIR=/tmp/.mypy_cache
     command: mypy /app/src/clockodo_mcp /app/tests
 
   lint:
@@ -19,6 +20,7 @@ services:
     working_dir: /app
     environment:
       - PYTHONPATH=/app/src
+      - RUFF_CACHE_DIR=/tmp/.ruff_cache
     command: >
       pylint /app/src/clockodo_mcp /app/tests
 
@@ -33,7 +35,8 @@ services:
       - PYTHONPATH=/app/src
     env_file: .env.example
     command: >
-      pytest --cov-report=term-missing
+      pytest -o cache_dir=/tmp/.pytest_cache
+      --cov-report=term-missing
       --cov-report=xml:/tmp/.coverage.xml
       --cov-config=/app/setup.cfg
       --cov=clockodo_mcp
@@ -48,6 +51,7 @@ services:
     working_dir: /app
     environment:
       - PYTHONPATH=/app/src
+      - BLACK_CACHE_DIR=/tmp/.black_cache
     command: black --check /app/src/clockodo_mcp /app/tests
 
   jupyter:

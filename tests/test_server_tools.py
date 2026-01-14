@@ -1,23 +1,23 @@
 from unittest.mock import Mock, patch
 
 from clockodo_mcp.server import create_server
+from clockodo_mcp.tools.debug_tools import get_raw_user_reports
 from clockodo_mcp.tools.hr_tools import (
     check_overtime_compliance,
     check_vacation_compliance,
     get_hr_summary,
 )
 from clockodo_mcp.tools.user_tools import (
-    get_my_clock,
-    start_my_clock,
-    stop_my_clock,
-    add_my_vacation,
-    get_my_entries,
     add_my_entry,
-    edit_my_entry,
+    add_my_vacation,
     delete_my_entry,
     delete_my_vacation,
+    edit_my_entry,
+    get_my_clock,
+    get_my_entries,
+    start_my_clock,
+    stop_my_clock,
 )
-from clockodo_mcp.tools.debug_tools import get_raw_user_reports
 
 
 def test_server_list_users_tool_calls_client():

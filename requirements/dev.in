@@ -7,5 +7,6 @@ black>=24.3.0
 mypy>=1.10.0
 pylint>=3.2.0
 pip-tools>=7.4.0
+setuptools-scm>=8.0
 types-pyyaml
 python-dotenv

@@ -16,3 +16,6 @@ max-line-length=88
 
 [BASIC]
 good-names=i,j,k,ex,_,id
+
+[MASTER]
+ignore=_version.py

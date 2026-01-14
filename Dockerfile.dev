@@ -21,7 +21,7 @@ COPY pyproject.toml /workspace/pyproject.toml
 COPY src /workspace/src
 
 RUN pip install --upgrade pip && \
-    pip install -e .[dev]
+    SETUPTOOLS_SCM_PRETEND_VERSION=0.0.0 pip install -e .[dev]
 
 USER app
 

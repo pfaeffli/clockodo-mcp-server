@@ -227,6 +227,18 @@ if config.is_enabled(FeatureGroup.ADMIN_EDIT):
 - Test different configurations via env vars
 - Document all environment variables
 
+### 11. **Project Versioning**
+
+**Pattern**: Automated Git Tag Versioning
+
+The project version is automatically managed using `setuptools-scm` based on Git tags. This ensures that the version in `pyproject.toml` and at runtime always matches the latest Git tag.
+
+**Rules:**
+- Version is NOT hardcoded in `pyproject.toml` (uses `dynamic = ["version"]`)
+- `src/clockodo_mcp/__init__.py` retrieves the version at runtime using `importlib.metadata` or a generated `_version.py` file
+- New releases are created by tagging the repository (e.g., `git tag v0.3.0`)
+- The version matches semantic versioning principles
+
 ---
 
 ## Setup

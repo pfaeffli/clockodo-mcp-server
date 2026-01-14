@@ -1,6 +1,7 @@
 """MCP tools for user-specific interactions."""
 
 from __future__ import annotations
+
 from ..client import ClockodoClient
 from ..services.user_service import UserService
 

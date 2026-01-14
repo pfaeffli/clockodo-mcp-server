@@ -1,5 +1,5 @@
-from clockodo_mcp.server import create_server
 from clockodo_mcp.config import ServerConfig
+from clockodo_mcp.server import create_server
 
 
 def test_server_has_health_tool():

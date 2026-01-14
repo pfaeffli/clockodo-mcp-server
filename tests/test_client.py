@@ -1,8 +1,8 @@
 import httpx
-import respx
 import pytest
+import respx
 
-from clockodo_mcp.client import ClockodoClient, DEFAULT_BASE_URL
+from clockodo_mcp.client import DEFAULT_BASE_URL, ClockodoClient
 
 
 def test_clockodo_client_builds_auth_headers_from_env(monkeypatch):

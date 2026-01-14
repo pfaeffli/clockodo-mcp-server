@@ -18,12 +18,12 @@ import json
 
 from mcp.server.fastmcp import FastMCP  # type: ignore
 
+from . import prompts as prompt_templates
+from . import resources as resource_handlers
 from .client import ClockodoClient
 from .config import FeatureGroup, ServerConfig
 from .services.team_leader_service import TeamLeaderService
 from .tools import debug_tools, hr_tools, team_leader_tools, user_tools
-from . import prompts as prompt_templates
-from . import resources as resource_handlers
 
 # Pattern #2: Configuration Management
 # Load configuration from environment variables with safe defaults

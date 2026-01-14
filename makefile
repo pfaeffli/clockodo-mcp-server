@@ -47,17 +47,17 @@ build-mcp:	##@Docker Build clockodo-mcp:latest image
 test:	##@Testing Run pytest with coverage in container
 	docker compose -f docker-compose.test.yml run --rm test
 
-lint:	##@Code-Quality Run pylint in container
-	docker compose -f docker-compose.test.yml run --rm lint
+lint:	##@Code-Quality Run pylint, ruff, and isort check in container
+	docker compose -f docker-compose.test.yml run --rm lint sh -c "pylint src/clockodo_mcp tests && ruff check --no-cache src tests && isort --check-only src tests"
 
 type:	##@Code-Quality Run mypy type checking in container
 	docker compose -f docker-compose.test.yml run --rm type
 
-format:	##@Code-Quality Format code with black in container
-	docker compose -f docker-compose.test.yml run --rm -v .:/app -w /app style-check sh -c "black /app/src/clockodo_mcp /app/tests"
+format:	##@Code-Quality Format code with black and isort in container
+	docker compose -f docker-compose.test.yml run --rm -v .:/app -w /app style-check sh -c "black --no-cache /app/src /app/tests && isort /app/src /app/tests"
 
-format-check:	##@Code-Quality Check code formatting in container
-	docker compose -f docker-compose.test.yml run --rm style-check
+format-check:	##@Code-Quality Check code formatting with black and isort in container
+	docker compose -f docker-compose.test.yml run --rm style-check sh -c "black --check --no-cache /app/src /app/tests && isort --check-only /app/src /app/tests"
 
 manual-test:	##@Manual Start Jupyter notebook for manual testing
 	docker compose -f docker-compose.test.yml up jupyter

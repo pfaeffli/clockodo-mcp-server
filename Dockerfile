@@ -1,4 +1,31 @@
 # syntax=docker/dockerfile:1
+# Stage 1: Builder
+# This stage installs git and uses it to discover the version via setuptools-scm.
+# It installs the package into a temporary directory.
+FROM python:3.13-slim AS builder
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+WORKDIR /build
+
+# Install git for setuptools-scm versioning
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy project files including .git for version discovery
+COPY . .
+
+# Install project into a prefix directory
+RUN pip install --upgrade pip && \
+    pip install --prefix=/install .
+
+# Stage 2: Final
+# This stage is the deliverable. It contains only the installed package
+# and its runtime dependencies. No git, no .git directory.
 FROM python:3.13-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -6,22 +33,17 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Create non-root user
-RUN useradd -m appuser
-WORKDIR /app
-
-# System deps (if needed later). Keep minimal for fast builds.
+# Install runtime system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy project metadata first for better caching
-COPY pyproject.toml /app/
-COPY src /app/src
+# Create non-root user
+RUN useradd -m appuser
+WORKDIR /app
 
-# Install project (runtime deps only)
-RUN pip install --upgrade pip && \
-    pip install .
+# Copy the installed files from the builder stage
+COPY --from=builder /install /usr/local
 
 # Default env vars for Clockodo (override at runtime)
 ENV CLOCKODO_BASE_URL="https://my.clockodo.com/api/v2/"

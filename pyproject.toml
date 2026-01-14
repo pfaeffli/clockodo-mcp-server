@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=68", "setuptools-scm>=8.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "clockodo-mcp"
-version = "0.1.0"
+dynamic = ["version"]
 description = "MCP server wrapper for Clockodo API"
 authors = [
   { name = "Clockodo MCP", email = "devnull@example.com" }
@@ -32,17 +32,24 @@ dev = [
   "pylint>=3.2.0",
   "pip-tools>=7.4.0",
   "python-dotenv",
+  "setuptools-scm>=8.0",
 ]
+
+[tool.setuptools_scm]
+version_file = "src/clockodo_mcp/_version.py"
 
 [tool.black]
 line-length = 88
+extend-exclude = 'src/clockodo_mcp/_version\.py'
 
 [tool.isort]
 profile = "black"
 line_length = 88
+extend_skip = ["src/clockodo_mcp/_version.py"]
 
 [tool.ruff]
 line-length = 88
+extend-exclude = ["src/clockodo_mcp/_version.py"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"

@@ -1,4 +1,5 @@
 from unittest.mock import Mock
+
 from clockodo_mcp.tools.team_leader_tools import register_team_leader_tools
 
 
