@@ -27,3 +27,6 @@ CVE-2007-5191   # initscripts permissions - not relevant in container
 
 # sqlite3 - Medium severity but requires FTS5 specific usage
 CVE-2024-0232   # FTS5 integer overflow - we don't use FTS5 features
+
+# glibc - no fix available from Debian yet (status: affected)
+CVE-2026-0861   # Integer overflow in memalign leads to heap corruption
