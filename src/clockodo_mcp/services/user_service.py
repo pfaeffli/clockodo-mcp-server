@@ -12,6 +12,8 @@ from typing import TYPE_CHECKING
 
 import httpx
 
+from ..date_utils import normalize_datetime
+
 if TYPE_CHECKING:
     from ..client import ClockodoClient
 
@@ -95,8 +97,8 @@ class UserService:
         """Get time entries for the current user."""
         user_id = self.get_current_user_id()
         return self.client.list_entries(
-            time_since=time_since,
-            time_until=time_until,
+            time_since=normalize_datetime(time_since),
+            time_until=normalize_datetime(time_until),
             user_id=user_id,
         )
 
@@ -116,8 +118,8 @@ class UserService:
             customers_id=customers_id,
             services_id=services_id,
             billable=billable,
-            time_since=time_since,
-            time_until=time_until,
+            time_since=normalize_datetime(time_since),
+            time_until=normalize_datetime(time_until),
             projects_id=projects_id,
             text=text,
             user_id=user_id,

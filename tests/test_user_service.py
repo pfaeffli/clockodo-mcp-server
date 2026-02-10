@@ -219,6 +219,57 @@ def test_add_my_entry():
     assert result["entry"]["id"] == 3001
 
 
+def test_get_my_entries_normalizes_dates():
+    """Service layer should normalize space-separated dates to ISO 8601."""
+    client = MagicMock()
+    client.api_user = "alice@example.com"
+    client.list_users.return_value = {
+        "users": [{"id": 42, "email": "alice@example.com"}]
+    }
+    client.list_entries.return_value = {"entries": []}
+
+    service = UserService(client)
+    service.get_my_entries(
+        time_since="2025-01-01 00:00:00", time_until="2025-01-01 23:59:59"
+    )
+
+    client.list_entries.assert_called_once_with(
+        time_since="2025-01-01T00:00:00Z",
+        time_until="2025-01-01T23:59:59Z",
+        user_id=42,
+    )
+
+
+def test_add_my_entry_normalizes_dates():
+    """Service layer should normalize space-separated dates to ISO 8601."""
+    client = MagicMock()
+    client.api_user = "alice@example.com"
+    client.list_users.return_value = {
+        "users": [{"id": 42, "email": "alice@example.com"}]
+    }
+    client.create_entry.return_value = {"entry": {"id": 3001}}
+
+    service = UserService(client)
+    service.add_my_entry(
+        customers_id=123,
+        services_id=456,
+        billable=1,
+        time_since="2025-01-01 09:00:00",
+        time_until="2025-01-01 10:00:00",
+    )
+
+    client.create_entry.assert_called_once_with(
+        customers_id=123,
+        services_id=456,
+        billable=1,
+        time_since="2025-01-01T09:00:00Z",
+        time_until="2025-01-01T10:00:00Z",
+        projects_id=None,
+        text=None,
+        user_id=42,
+    )
+
+
 def test_edit_my_entry():
     """Test editing an entry."""
     client = MagicMock()
