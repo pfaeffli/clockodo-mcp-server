@@ -270,6 +270,40 @@ def test_add_my_entry_normalizes_dates():
     )
 
 
+def test_add_my_entry_with_text():
+    """Test that text parameter is passed through to the client."""
+    client = MagicMock()
+    client.api_user = "alice@example.com"
+    client.list_users.return_value = {
+        "users": [{"id": 42, "email": "alice@example.com"}]
+    }
+    client.create_entry.return_value = {
+        "entry": {"id": 3001, "text": "Work description", "texts_id": 555}
+    }
+
+    service = UserService(client)
+    result = service.add_my_entry(
+        customers_id=123,
+        services_id=456,
+        billable=0,
+        time_since="2025-01-01T09:00:00Z",
+        time_until="2025-01-01T10:00:00Z",
+        text="Work description",
+    )
+
+    client.create_entry.assert_called_once_with(
+        customers_id=123,
+        services_id=456,
+        billable=0,
+        time_since="2025-01-01T09:00:00Z",
+        time_until="2025-01-01T10:00:00Z",
+        projects_id=None,
+        text="Work description",
+        user_id=42,
+    )
+    assert result["entry"]["text"] == "Work description"
+
+
 def test_edit_my_entry():
     """Test editing an entry."""
     client = MagicMock()
