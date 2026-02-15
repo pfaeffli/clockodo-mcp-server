@@ -267,6 +267,40 @@ def test_add_my_entry_tool(mock_client_class):
 
 
 @patch("clockodo_mcp.tools.user_tools.ClockodoClient")
+def test_add_my_entry_tool_with_text(mock_client_class):
+    mock_client = Mock()
+    mock_client_class.from_env.return_value = mock_client
+    mock_client.api_user = "me@example.com"
+    mock_client.list_users.return_value = {
+        "users": [{"id": 42, "email": "me@example.com"}]
+    }
+    mock_client.create_entry.return_value = {
+        "entry": {"id": 301, "text": "Test description", "texts_id": 999}
+    }
+
+    result = add_my_entry(
+        customers_id=123,
+        services_id=456,
+        time_since="2025-01-01T09:00:00Z",
+        time_until="2025-01-01T10:00:00Z",
+        billable=0,
+        text="Test description",
+    )
+
+    mock_client.create_entry.assert_called_once_with(
+        customers_id=123,
+        services_id=456,
+        billable=0,
+        time_since="2025-01-01T09:00:00Z",
+        time_until="2025-01-01T10:00:00Z",
+        projects_id=None,
+        text="Test description",
+        user_id=42,
+    )
+    assert result["entry"]["id"] == 301
+
+
+@patch("clockodo_mcp.tools.user_tools.ClockodoClient")
 def test_edit_my_entry_tool(mock_client_class):
     mock_client = Mock()
     mock_client_class.from_env.return_value = mock_client
