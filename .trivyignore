@@ -43,3 +43,11 @@ CVE-2025-69720 exp:2026-08-10
 # its vulnerable code paths are unreachable in this image.
 # Re-evaluate by 2026-08-10.
 CVE-2026-29111 exp:2026-08-10
+
+# libcap TOCTOU privilege escalation — affects libcap2. No fix in Debian
+# trixie as of 2026-05. The TOCTOU race requires a privileged process
+# performing capability checks; this image runs as the non-root
+# `appuser` (Dockerfile:42) with no setuid binaries in the runtime path,
+# making the attack vector unreachable.
+# Re-evaluate by 2026-08-10.
+CVE-2026-4878 exp:2026-08-10
