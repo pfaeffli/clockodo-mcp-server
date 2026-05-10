@@ -46,7 +46,7 @@ WORKDIR /app
 COPY --from=builder /install /usr/local
 
 # Default env vars for Clockodo (override at runtime)
-ENV CLOCKODO_BASE_URL="https://my.clockodo.com/api/v2/"
+ENV CLOCKODO_BASE_URL="https://my.clockodo.com/api/"
 
 USER appuser
 
