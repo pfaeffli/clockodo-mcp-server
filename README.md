@@ -265,7 +265,7 @@ Add configuration to your IDE's MCP settings (e.g., Claude Desktop):
         "-e",
         "CLOCKODO_USER_AGENT=my-company/1.0",
         "-e",
-        "CLOCKODO_BASE_URL=https://my.clockodo.com/api/v2/",
+        "CLOCKODO_BASE_URL=https://my.clockodo.com/api/",
         "-e",
         "CLOCKODO_EXTERNAL_APP_CONTACT=dev@company.com",
         "-e",
@@ -315,7 +315,7 @@ docker run -d \
 
 ### API Configuration (Optional)
 - `CLOCKODO_USER_AGENT` - Custom user agent string (default: "clockodo-mcp/unknown")
-- `CLOCKODO_BASE_URL` - API base URL (default: "https://my.clockodo.com/api/v2/")
+- `CLOCKODO_BASE_URL` - API base URL (default: "https://my.clockodo.com/api/")
 - `CLOCKODO_EXTERNAL_APP_CONTACT` - Contact info for external app header (default: API user email)
 
 ### Transport Configuration (Optional)
