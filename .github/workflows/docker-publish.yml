@@ -97,12 +97,15 @@ jobs:
           output: 'trivy-results-arm64.sarif'
           severity: 'CRITICAL,HIGH'
 
+      # amd64 results upload under the default category ("Trivy") so the
+      # existing GitHub Code Scanning baseline on main keeps matching —
+      # adding a category here would orphan the prior configuration and
+      # surface "1 configuration not found" on every future PR.
       - name: Upload Trivy results (amd64) to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: 'trivy-results-amd64.sarif'
-          category: trivy-amd64
 
       - name: Upload Trivy results (arm64) to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v4
