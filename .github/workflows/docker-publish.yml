@@ -28,8 +28,6 @@ jobs:
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
-        with:
-          platforms: linux/amd64,linux/arm64
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -56,46 +54,86 @@ jobs:
             type=sha
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Build Docker image
+      # Build amd64 image locally for scanning. load: true is incompatible
+      # with multi-platform, so each architecture is built separately and
+      # scanned. Per-platform cache scopes prevent layer thrashing across
+      # arches.
+      - name: Build amd64 image
         uses: docker/build-push-action@v5
         with:
           context: .
           load: true
-          tags: ${{ steps.meta.outputs.tags }}
+          platforms: linux/amd64
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}-amd64
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=amd64
+          cache-to: type=gha,mode=max,scope=amd64
 
-      # Vulnerability Scanning with Trivy
-      - name: Run Trivy vulnerability scanner
+      - name: Build arm64 image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          load: true
+          platforms: linux/arm64
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}-arm64
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=arm64
+          cache-to: type=gha,mode=max,scope=arm64
+
+      # Vulnerability Scanning with Trivy — both architectures.
+      - name: Run Trivy vulnerability scanner (amd64, sarif)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}-amd64
           format: 'sarif'
-          output: 'trivy-results.sarif'
+          output: 'trivy-results-amd64.sarif'
           severity: 'CRITICAL,HIGH'
 
-      - name: Upload Trivy results to GitHub Security tab
+      - name: Run Trivy vulnerability scanner (arm64, sarif)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}-arm64
+          format: 'sarif'
+          output: 'trivy-results-arm64.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy results (amd64) to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: 'trivy-results-amd64.sarif'
+          category: trivy-amd64
 
-      - name: Run Trivy vulnerability scanner (table format)
+      - name: Upload Trivy results (arm64) to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: 'trivy-results-arm64.sarif'
+          category: trivy-arm64
+
+      - name: Run Trivy vulnerability scanner (amd64, table — gating)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}-amd64
           format: 'table'
           severity: 'CRITICAL,HIGH'
-          exit-code: '1'  # Fail only on CRITICAL/HIGH vulnerabilities
+          exit-code: '1'
 
-      - name: Run Trivy vulnerability scanner (informational - including MEDIUM)
+      - name: Run Trivy vulnerability scanner (arm64, table — gating)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}-arm64
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+
+      - name: Run Trivy vulnerability scanner (amd64, informational MEDIUM)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}-amd64
           format: 'table'
           severity: 'MEDIUM'
-          exit-code: '0'  # Report MEDIUM but don't fail
+          exit-code: '0'
 
       # License Scanning
       - name: Install license checker
@@ -119,7 +157,8 @@ jobs:
             echo "✅ No problematic licenses found"
           fi
 
-      # Container Security Best Practices Scan
+      # Container Security Best Practices Scan — runs against amd64 (Dockle
+      # checks Dockerfile-level practices that don't vary by arch).
       - name: Run Dockle for container best practices
         run: |
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
@@ -127,9 +166,10 @@ jobs:
             --exit-code 1 --exit-level fatal \
             -af settings.py \
             -i DKL-DI-0005 \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}-amd64
 
-      # Push Docker image (only on version tags) — multi-arch for amd64 + arm64 (macOS Apple Silicon)
+      # Push Docker image (only on version tags) — multi-arch for amd64 + arm64 (macOS Apple Silicon).
+      # Reuses the per-platform caches populated by the scan builds above.
       - name: Push Docker image
         if: startsWith(github.ref, 'refs/tags/v')
         uses: docker/build-push-action@v5
@@ -139,21 +179,32 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: |
+            type=gha,scope=amd64
+            type=gha,scope=arm64
 
-      # Generate SBOM (Software Bill of Materials)
-      - name: Generate SBOM
+      # Generate per-platform SBOMs from the locally-built per-arch images
+      # (loaded via load: true above). Scanning the manifest-list tag would
+      # resolve to one platform's SBOM only.
+      - name: Generate SBOM (amd64)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: anchore/sbom-action@v0
         with:
-          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}-amd64
           format: 'spdx-json'
-          output-file: 'sbom.spdx.json'
+          output-file: 'sbom-amd64.spdx.json'
 
-      - name: Upload SBOM as artifact
+      - name: Generate SBOM (arm64)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}-arm64
+          format: 'spdx-json'
+          output-file: 'sbom-arm64.spdx.json'
+
+      - name: Upload SBOMs as artifact
         if: startsWith(github.ref, 'refs/tags/v')
         uses: actions/upload-artifact@v4
         with:
           name: sbom
-          path: sbom.spdx.json
+          path: sbom-*.spdx.json
