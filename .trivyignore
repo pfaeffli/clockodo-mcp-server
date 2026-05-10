@@ -30,3 +30,16 @@ CVE-2024-0232   # FTS5 integer overflow - we don't use FTS5 features
 
 # glibc - no fix available from Debian yet (status: affected)
 CVE-2026-0861   # Integer overflow in memalign leads to heap corruption
+
+# ncurses buffer overflow — affects libncursesw6, libtinfo6, ncurses-base.
+# No fix in Debian trixie as of 2026-05. Trivy reports HIGH but the buffer
+# overflow is in tic/infocmp local utilities not invoked by this server.
+# Re-evaluate by 2026-08-10.
+CVE-2025-69720 exp:2026-08-10
+
+# systemd arbitrary code execution / DoS — affects libsystemd0, libudev1.
+# No fix in Debian trixie as of 2026-05. We don't run systemd inside the
+# container; libsystemd0 is pulled in transitively by base packages and
+# its vulnerable code paths are unreachable in this image.
+# Re-evaluate by 2026-08-10.
+CVE-2026-29111 exp:2026-08-10
