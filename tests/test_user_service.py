@@ -326,3 +326,87 @@ def test_delete_my_entry():
 
     client.delete_entry.assert_called_once_with(3001)
     assert result["success"] is True
+
+
+def _absence(absence_id, users_id, abs_type=1, status=1):
+    return {
+        "id": absence_id,
+        "users_id": users_id,
+        "date_since": "2025-07-01",
+        "date_until": "2025-07-05",
+        "type": abs_type,
+        "status": status,
+        "count_days": 5,
+        "note": "Summer holiday",
+    }
+
+
+def _absence_client():
+    client = MagicMock()
+    client.api_user = "alice@example.com"
+    client.list_users.return_value = {
+        "users": [{"id": 42, "email": "alice@example.com"}]
+    }
+    return client
+
+
+def test_get_my_absences_filters_to_current_user():
+    """Only the authenticated user's absences should be returned."""
+    client = _absence_client()
+    client.list_absences.return_value = {
+        "absences": [
+            _absence(2001, 42),
+            _absence(2002, 99),  # another user, must be filtered out
+        ]
+    }
+
+    service = UserService(client)
+    result = service.get_my_absences(year=2025)
+
+    client.list_absences.assert_called_once_with(2025)
+    ids = [a["id"] for a in result["absences"]]
+    assert ids == [2001]
+
+
+def test_get_my_absences_includes_all_statuses():
+    """Approved and enquired absences alike are returned (all statuses)."""
+    client = _absence_client()
+    client.list_absences.return_value = {
+        "absences": [
+            _absence(2001, 42, status=0),  # enquired
+            _absence(2002, 42, status=1),  # approved
+            _absence(2003, 42, status=2),  # declined
+        ]
+    }
+
+    service = UserService(client)
+    result = service.get_my_absences(year=2025)
+
+    assert {a["id"] for a in result["absences"]} == {2001, 2002, 2003}
+
+
+def test_get_my_absences_filters_by_type():
+    """Optional absence_type narrows results to a single type."""
+    client = _absence_client()
+    client.list_absences.return_value = {
+        "absences": [
+            _absence(2001, 42, abs_type=1),  # vacation
+            _absence(2002, 42, abs_type=2),  # illness
+        ]
+    }
+
+    service = UserService(client)
+    result = service.get_my_absences(year=2025, absence_type=2)
+
+    assert [a["id"] for a in result["absences"]] == [2002]
+
+
+def test_get_my_absences_handles_missing_absences_key():
+    """A response without absences yields an empty list, not an error."""
+    client = _absence_client()
+    client.list_absences.return_value = {}
+
+    service = UserService(client)
+    result = service.get_my_absences(year=2025)
+
+    assert result["absences"] == []
