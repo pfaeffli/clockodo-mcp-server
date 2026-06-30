@@ -10,8 +10,10 @@ def test_analyze_overtime_no_violation_when_under_threshold():
         "users_id": 1,
         "users_name": "Alice",
         "year": 2024,
+        # diff already includes the carryover; the carryover here must be
+        # ignored so the balance is not double-counted (see issue #24).
         "diff": 72000,  # 20 hours in seconds
-        "overtime_carryover": 0,
+        "overtime_carryover": 282060,  # 78.35 hours, already folded into diff
     }
 
     result = analyze_overtime(report, max_hours_threshold=80)
@@ -26,15 +28,34 @@ def test_analyze_overtime_violation_when_exceeds_threshold():
         "users_id": 2,
         "users_name": "Bob",
         "year": 2024,
-        "diff": 288000,  # 80 hours in seconds
-        "overtime_carryover": 18000,  # 5 hours in seconds
+        # diff is the current overtime balance, carryover already folded in.
+        "diff": 360000,  # 100 hours in seconds
+        "overtime_carryover": 18000,  # 5 hours, must NOT be added on top
     }
 
     result = analyze_overtime(report, max_hours_threshold=80)
 
     assert result["has_violation"] is True
-    assert result["overtime_hours"] == 85.0
-    assert result["excess_hours"] == 5.0
+    assert result["overtime_hours"] == 100.0
+    assert result["excess_hours"] == 20.0
+
+
+def test_analyze_overtime_does_not_double_count_carryover():
+    """Regression for issue #24: carryover is already part of diff."""
+    # Stefan Huwiler production case: actual balance 61.43 h (under 80 h),
+    # was falsely flagged because carryover (78.35 h) was added on top.
+    report = {
+        "users_id": 424877,
+        "users_name": "Stefan Huwiler",
+        "year": 2026,
+        "diff": 221150,  # 61.43 hours — the real balance
+        "overtime_carryover": 282060,  # 78.35 hours, already in diff
+    }
+
+    result = analyze_overtime(report, max_hours_threshold=80)
+
+    assert abs(result["overtime_hours"] - 61.4306) < 0.01
+    assert result["has_violation"] is False
 
 
 def test_analyze_overtime_with_negative_diff():
