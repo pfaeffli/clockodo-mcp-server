@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- **HR Overtime Double-Count** (#24): `get_hr_summary` / `check_overtime_compliance` no longer add the prior-year overtime carryover on top of `diff`. Clockodo's `diff` already includes the carryover, so the previous behaviour inflated balances and produced false-positive `excessive_overtime` violations. `overtime_hours` now equals `diff / 3600`.
+
 ## [0.3.1] - 2026-01-14
 
 ### Added

@@ -12,13 +12,12 @@ def analyze_overtime(report: dict, max_hours_threshold: float) -> dict:
     Returns:
         Dictionary with overtime analysis results
     """
-    # Convert seconds to hours
+    # Convert seconds to hours. Clockodo's `diff` is already the current
+    # overtime balance with the prior-year carryover folded in
+    # (sum_hours + overtime_carryover - sum_target). Adding the carryover
+    # again would double-count it and inflate the balance (see issue #24).
     diff_seconds = report.get("diff") or 0
-    carryover_seconds = report.get("overtime_carryover") or 0
-
-    diff_hours = float(diff_seconds) / 3600
-    carryover_hours = float(carryover_seconds) / 3600
-    total_overtime = diff_hours + carryover_hours
+    total_overtime = float(diff_seconds) / 3600
 
     has_violation = total_overtime > max_hours_threshold
 
