@@ -78,3 +78,12 @@ CVE-2026-41992 exp:2026-09-15   # gzip LZH decoder buffer overflow
 # are mounted at runtime and the server runs as non-root `appuser`.
 # Re-evaluate by 2026-09-15.
 CVE-2026-53615 exp:2026-09-15   # libblkid dos.c integer overflow
+
+# sqlite FTS5 arbitrary code execution — affects libsqlite3-0. No fixed
+# version in Debian trixie as of 2026-08 (status: affected,
+# 3.46.1-7+deb13u1). The vulnerable paths require SQLite FTS5 usage; this
+# app does not use SQLite FTS5 — same justification as the CVE-2024-0232
+# waiver above.
+# Re-evaluate by 2026-09-15.
+CVE-2026-11822 exp:2026-09-15   # sqlite FTS5 arbitrary code execution
+CVE-2026-11824 exp:2026-09-15   # sqlite FTS5 arbitrary code execution / crash
