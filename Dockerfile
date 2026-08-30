@@ -45,6 +45,12 @@ WORKDIR /app
 # Copy the installed files from the builder stage
 COPY --from=builder /install /usr/local
 
+# Remove pip from the runtime image: nothing needs it at runtime, and the
+# base image's pip vendors setuptools 70.3.0 (CVE-2025-47273) and
+# msgpack 1.1.2 (GHSA-6v7p-g79w-8964), both flagged HIGH by the gating
+# Trivy scan with no in-place fix short of dropping pip.
+RUN python -m pip uninstall -y pip
+
 # Default env vars for Clockodo (override at runtime)
 ENV CLOCKODO_BASE_URL="https://my.clockodo.com/api/"
 
