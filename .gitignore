@@ -19,3 +19,10 @@ sbom.spdx.json
 # IDEs
 .idea/
 src/clockodo_mcp/_version.py
+
+# Local tool logs
+firebase-debug.log
+firebase-debug.*.log
+
+# Local agent instructions (contains personal preferences — do not publish)
+/CLAUDE.md
