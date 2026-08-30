@@ -38,21 +38,6 @@ CVE-2026-0861   # Integer overflow in memalign leads to heap corruption
 # Re-evaluate by 2026-09-15.
 CVE-2025-69720 exp:2026-09-15
 
-# systemd arbitrary code execution / DoS — affects libsystemd0, libudev1.
-# No fix in Debian trixie as of 2026-05. We don't run systemd inside the
-# container; libsystemd0 is pulled in transitively by base packages and
-# its vulnerable code paths are unreachable in this image.
-# Re-evaluate by 2026-08-10.
-CVE-2026-29111 exp:2026-08-10
-
-# libcap TOCTOU privilege escalation — affects libcap2. No fix in Debian
-# trixie as of 2026-05. The TOCTOU race requires a privileged process
-# performing capability checks; this image runs as the non-root
-# `appuser` (Dockerfile:42) with no setuid binaries in the runtime path,
-# making the attack vector unreachable.
-# Re-evaluate by 2026-08-10.
-CVE-2026-4878 exp:2026-08-10
-
 # perl-base — Archive::Tar / IO-Compress / Storable / perl interpreter issues.
 # No fix in Debian trixie as of 2026-07 (statuses: fix_deferred / affected;
 # verified against a freshly pulled python:3.13-slim, Debian 13.6,
