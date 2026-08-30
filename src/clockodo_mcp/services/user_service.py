@@ -93,6 +93,32 @@ class UserService:
             user_id=user_id,
         )
 
+    def get_my_absences(self, year: int, absence_type: int | None = None) -> dict:
+        """
+        List the authenticated user's absences for a given year.
+
+        Returns absences of all statuses (enquired, approved, declined, ...),
+        each carrying the ``id`` needed by ``delete_my_vacation`` and
+        ``adjust_vacation_dates``, along with the date range, type, status and
+        day count.
+
+        Args:
+            year: Calendar year to list absences for.
+            absence_type: Optional Clockodo absence type to filter by
+                (e.g. 1 = vacation, 2 = illness). When ``None`` all types are
+                returned.
+        """
+        user_id = self.get_current_user_id()
+        raw = self.client.list_absences(year)
+
+        absences = [
+            absence
+            for absence in raw.get("absences") or []
+            if absence.get("users_id") == user_id
+            and (absence_type is None or absence.get("type") == absence_type)
+        ]
+        return {"absences": absences}
+
     def get_my_entries(self, time_since: str, time_until: str) -> dict:
         """Get time entries for the current user."""
         user_id = self.get_current_user_id()

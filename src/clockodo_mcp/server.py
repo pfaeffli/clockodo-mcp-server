@@ -248,6 +248,21 @@ def _register_user_read_tools():
         """
         return user_tools.get_my_entries(time_since, time_until)
 
+    @mcp.tool()
+    def get_my_absences(year: int, absence_type: int | None = None) -> dict:
+        """
+        List the authenticated user's absences for a year (all statuses).
+
+        Returns each absence with its id, date_since, date_until, type, status
+        and count_days. The id is required to delete or adjust an absence.
+
+        Args:
+            year: Calendar year to list absences for
+            absence_type: Optional absence type to filter by (e.g. 1 = vacation,
+                2 = illness). When omitted, all types are returned.
+        """
+        return user_tools.get_my_absences(year, absence_type)
+
 
 def _register_user_edit_tools():
     """Register user edit tools."""
@@ -435,7 +450,7 @@ def create_server(client=None, test_config: ServerConfig | None = None):
                     ]
                 )
             if test_conf.user_read:
-                self.tool_names.append("get_my_time_entries")
+                self.tool_names.extend(["get_my_time_entries", "get_my_absences"])
             if test_conf.user_edit:
                 self.tool_names.extend(["add_my_time_entry", "delete_my_vacation"])
             if test_conf.team_leader:

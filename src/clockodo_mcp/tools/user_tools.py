@@ -74,6 +74,20 @@ def get_my_entries(time_since: str, time_until: str) -> dict:
     return service.get_my_entries(time_since, time_until)
 
 
+def get_my_absences(year: int, absence_type: int | None = None) -> dict:
+    """
+    List the authenticated user's absences for a given year.
+
+    Args:
+        year: Calendar year to list absences for
+        absence_type: Optional absence type to filter by (e.g. 1 = vacation,
+            2 = illness). When omitted, absences of all types are returned.
+    """
+    client = ClockodoClient.from_env()
+    service = UserService(client)
+    return service.get_my_absences(year, absence_type)
+
+
 def add_my_entry(
     customers_id: int,
     services_id: int,
