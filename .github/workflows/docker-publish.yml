@@ -18,7 +18,7 @@ jobs:
   build-and-scan:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
       packages: write
       security-events: write
 
@@ -82,7 +82,7 @@ jobs:
 
       # Vulnerability Scanning with Trivy — both architectures.
       - name: Run Trivy vulnerability scanner (amd64, sarif)
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}-amd64
           format: 'sarif'
@@ -90,7 +90,7 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
       - name: Run Trivy vulnerability scanner (arm64, sarif)
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}-arm64
           format: 'sarif'
@@ -115,7 +115,7 @@ jobs:
           category: trivy-arm64
 
       - name: Run Trivy vulnerability scanner (amd64, table — gating)
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}-amd64
           format: 'table'
@@ -123,7 +123,7 @@ jobs:
           exit-code: '1'
 
       - name: Run Trivy vulnerability scanner (arm64, table — gating)
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}-arm64
           format: 'table'
@@ -131,7 +131,7 @@ jobs:
           exit-code: '1'
 
       - name: Run Trivy vulnerability scanner (amd64, informational MEDIUM)
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}-amd64
           format: 'table'
