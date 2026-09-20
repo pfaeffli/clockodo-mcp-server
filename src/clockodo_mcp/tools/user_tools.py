@@ -80,8 +80,10 @@ def get_my_absences(year: int, absence_type: int | None = None) -> dict:
 
     Args:
         year: Calendar year to list absences for
-        absence_type: Optional absence type to filter by (e.g. 1 = vacation,
-            2 = illness). When omitted, absences of all types are returned.
+        absence_type: Optional Clockodo absence type to filter by
+            (1 = vacation, 2 = special leave, 3 = overtime reduction,
+            4 = sick day, 5 = sick day of a child). When omitted, absences of
+            all types are returned.
     """
     client = ClockodoClient.from_env()
     service = UserService(client)

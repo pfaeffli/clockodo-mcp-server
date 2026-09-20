@@ -105,8 +105,9 @@ class UserService:
         Args:
             year: Calendar year to list absences for.
             absence_type: Optional Clockodo absence type to filter by
-                (e.g. 1 = vacation, 2 = illness). When ``None`` all types are
-                returned.
+                (1 = vacation, 2 = special leave, 3 = overtime reduction,
+                4 = sick day, 5 = sick day of a child). When ``None`` all
+                types are returned.
         """
         user_id = self.get_current_user_id()
         raw = self.client.list_absences(year)
