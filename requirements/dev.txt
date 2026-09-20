@@ -8,7 +8,7 @@ anyio==4.12.0
     # via httpx
 astroid==4.0.2
     # via pylint
-black==25.12.0
+black==26.3.1
     # via -r requirements/dev.in
 build==1.3.0
     # via pip-tools
@@ -34,7 +34,7 @@ httpcore==1.0.9
     # via httpx
 httpx==0.28.1
     # via respx
-idna==3.11
+idna==3.15
     # via
     #   anyio
     #   httpx
@@ -71,7 +71,7 @@ pluggy==1.6.0
     # via
     #   pytest
     #   pytest-cov
-pygments==2.19.2
+pygments==2.20.0
     # via pytest
 pylint==4.0.4
     # via -r requirements/dev.in
@@ -79,7 +79,7 @@ pyproject-hooks==1.2.0
     # via
     #   build
     #   pip-tools
-pytest==9.0.2
+pytest==9.0.3
     # via
     #   -r requirements/dev.in
     #   pytest-cov
@@ -88,7 +88,7 @@ pytest-cov==7.0.0
     # via -r requirements/dev.in
 pytest-mock==3.15.1
     # via -r requirements/dev.in
-python-dotenv==1.2.1
+python-dotenv==1.2.2
     # via -r requirements/dev.in
 pytokens==0.3.0
     # via black
@@ -116,7 +116,7 @@ typing-extensions==4.15.0
     #   black
     #   exceptiongroup
     #   mypy
-wheel==0.45.1
+wheel==0.46.2
     # via pip-tools
 
 # The following packages are considered to be unsafe in a requirements file:
