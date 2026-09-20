@@ -1,12 +1,20 @@
-pytest>=8.0
+pytest>=9.0.3
 pytest-cov>=5.0.0
 pytest-mock>=3.0
 respx>=0.21.1
 ruff==0.14.10
-black>=24.3.0
-mypy>=1.10.0
-pylint>=3.2.0
+black==26.3.1
+mypy==1.19.1
+pylint==4.0.4
 pip-tools>=7.4.0
 setuptools-scm>=8.0
 types-pyyaml
-python-dotenv
+python-dotenv>=1.2.2
+
+# Transitive dependencies pinned to clear security advisories. Without these
+# floors pip-compile may resolve a vulnerable version that still satisfies the
+# direct requirements above.
+anyio>=4.14.2      # TLSStream IDNA 2003 host name encoding -> cert spoofing
+idna>=3.15         # idna.encode() can bypass the CVE-2024-3651 fix
+pygments>=2.20.0   # ReDoS in the GUID-matching regex
+wheel>=0.46.2      # path traversal in `wheel unpack`
