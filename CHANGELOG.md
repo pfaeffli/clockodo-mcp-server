@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Self-Service Absence Listing** (#25): New `get_my_absences(year, absence_type=None)` tool lists the authenticated user's absences for a year across all statuses (enquired, approved, declined). Each entry includes the `id` required by `delete_my_vacation` / `adjust_vacation_dates`, plus `date_since`, `date_until`, `type`, `status` and `count_days`.
+
 ## [0.3.1] - 2026-01-14
 
 ### Added

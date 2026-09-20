@@ -393,6 +393,7 @@ The following are still supported but deprecated. Use `CLOCKODO_MCP_ROLE` instea
 ### User Tools (when `USER_READ` or `USER_EDIT` enabled)
 - `get_my_clock()` - Get currently running clock
 - `get_my_time_entries(time_since, time_until)` - Get your time entries
+- `get_my_absences(year, absence_type=None)` - List your absences for a year (all statuses), including the `absence_id` needed to delete or adjust them
 - `start_my_clock(...)` - Start tracking time
 - `stop_my_clock()` - Stop tracking time
 - `add_my_time_entry(...)` - Add a manual time entry
