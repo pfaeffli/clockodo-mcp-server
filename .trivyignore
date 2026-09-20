@@ -28,62 +28,60 @@ CVE-2007-5191   # initscripts permissions - not relevant in container
 # sqlite3 - Medium severity but requires FTS5 specific usage
 CVE-2024-0232   # FTS5 integer overflow - we don't use FTS5 features
 
-# glibc - no fix available from Debian yet (status: affected)
-CVE-2026-0861   # Integer overflow in memalign leads to heap corruption
+# ---------------------------------------------------------------------------
+# Dated waivers. Every entry below is a base-image (Debian) package finding
+# with NO fixed version available upstream. Re-verified 2026-09-20 against a
+# freshly built image (python:3.13-slim, Debian 13.7) with:
+#   docker save clockodo-mcp:latest -o img.tar
+#   trivy image --input img.tar --severity UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+# Entries whose CVE is no longer reported at any severity are deleted rather
+# than extended (see the PR for the list dropped on 2026-09-20).
+# ---------------------------------------------------------------------------
 
-# ncurses buffer overflow — affects libncursesw6, libtinfo6, ncurses-base.
-# Still no fix in Debian trixie as of 2026-07 (status: affected). Trivy
-# reports HIGH but the buffer overflow is in tic/infocmp local utilities
-# not invoked by this server.
-# Re-evaluate by 2026-09-15.
-CVE-2025-69720 exp:2026-09-15
+# ncurses buffer overflow — affects libncursesw6, libtinfo6, ncurses-base,
+# ncurses-bin. Still no fix in Debian trixie as of 2026-09 (status: affected).
+# The overflow is in analyze_string() in the `infocmp` command-line tool,
+# which this server never invokes; it runs `clockodo-mcp` with no terminfo
+# tooling in the runtime path.
+# Re-evaluate by 2026-11-15.
+CVE-2025-69720 exp:2026-11-15
 
-# perl-base — Archive::Tar / IO-Compress / Storable / perl interpreter issues.
-# No fix in Debian trixie as of 2026-07 (statuses: fix_deferred / affected;
-# verified against a freshly pulled python:3.13-slim, Debian 13.6,
-# perl-base 5.40.1-6). perl is a base-image essential package (dpkg depends
-# on perl-base) and is never invoked by this server, which runs
-# `python -m clockodo_mcp` with no perl, tar or archive processing in the
-# runtime path.
-# Re-evaluate by 2026-09-15.
-CVE-2026-42496 exp:2026-09-15   # perl-Archive-Tar path traversal (CRITICAL)
-CVE-2026-8376 exp:2026-09-15    # perl heap buffer overflow (CRITICAL)
-CVE-2026-42497 exp:2026-09-15   # perl-Archive-Tar arbitrary file write
-CVE-2026-48962 exp:2026-09-15   # perl-IO-Compress arbitrary code execution
-CVE-2026-9538 exp:2026-09-15    # Archive::Tar < 3.10 memory handling
-CVE-2026-13221 exp:2026-09-15   # perl regex silently incorrect results (CRITICAL)
-CVE-2026-57433 exp:2026-09-15   # perl Storable signed integer overflow (CRITICAL)
-CVE-2026-57432 exp:2026-09-15   # perl S_measure_struct integer overflow (HIGH)
+# perl-base — Archive::Tar denial of service via a crafted tar header
+# declaring a multi-gigabyte entry size. No fix in Debian trixie as of
+# 2026-09 (status: fix_deferred, perl-base 5.40.1-6+deb13u1). perl-base is a
+# base-image essential package (dpkg depends on it) and is never invoked by
+# this server, which performs no tar or archive processing at runtime.
+# Re-evaluate by 2026-11-15.
+CVE-2026-9538 exp:2026-11-15    # perl-Archive-Tar DoS (HIGH)
 
 # acl / attr symlink-traversal privilege escalation — affects libacl1 and
-# libattr1. No fix in Debian trixie as of 2026-07. The escalation requires a
-# privileged process walking attacker-controlled symlinks; this image runs as
-# the non-root `appuser` (Dockerfile:42) and performs no acl/xattr operations.
-# Re-evaluate by 2026-09-15.
-CVE-2026-54369 exp:2026-09-15   # libacl1 symlink traversal
-CVE-2026-54371 exp:2026-09-15   # libattr1 symlink traversal
+# libattr1. No fix in Debian trixie as of 2026-09 (status: affected). The
+# escalation requires a privileged process walking attacker-controlled
+# symlinks through the libacl pathname functions; this image runs as the
+# non-root `appuser` (Dockerfile:57) and performs no acl/xattr operations.
+# Re-evaluate by 2026-11-15.
+CVE-2026-54369 exp:2026-11-15   # libacl1 symlink traversal (HIGH)
+CVE-2026-54371 exp:2026-11-15   # libattr1 symlink traversal (MEDIUM)
 
-# gzip global buffer overflow in the LZH decoder — affects gzip. No fix in
-# Debian trixie as of 2026-07 (status: affected). gzip is a base-image
-# package; this server never decompresses untrusted .lzh/.gz input, so the
-# vulnerable decoder path is unreachable.
-# Re-evaluate by 2026-09-15.
-CVE-2026-41992 exp:2026-09-15   # gzip LZH decoder buffer overflow
+# systemd-homed local privilege escalation via missing home-record signature
+# verification — Trivy attributes this to libsystemd0 / libudev1, the only
+# systemd components present. No fix in Debian trixie as of 2026-09 (status:
+# affected, 257.13-1~deb13u1). systemd-homed itself is not installed, no
+# systemd process runs in this container, and there are no homed-managed
+# users, so the vulnerable code is absent rather than merely unreachable.
+# Re-evaluate by 2026-11-15.
+CVE-2026-16742 exp:2026-11-15   # systemd-homed LPE (HIGH)
 
-# util-linux integer overflow in libblkid DOS-partition parser — affects
-# util-linux, mount, login, libblkid1, libmount1, libuuid1, libsmartcols1,
-# liblastlog2-2, bsdutils (HIGH). No fix in Debian trixie as of 2026-07
-# (status: affected). The overflow is triggered by probing a crafted
-# partition table; this container never probes block devices — no volumes
-# are mounted at runtime and the server runs as non-root `appuser`.
-# Re-evaluate by 2026-09-15.
-CVE-2026-53615 exp:2026-09-15   # libblkid dos.c integer overflow
-
-# sqlite FTS5 arbitrary code execution — affects libsqlite3-0. No fixed
-# version in Debian trixie as of 2026-08 (status: affected,
-# 3.46.1-7+deb13u1). The vulnerable paths require SQLite FTS5 usage; this
-# app does not use SQLite FTS5 — same justification as the CVE-2024-0232
-# waiver above.
-# Re-evaluate by 2026-09-15.
-CVE-2026-11822 exp:2026-09-15   # sqlite FTS5 arbitrary code execution
-CVE-2026-11824 exp:2026-09-15   # sqlite FTS5 arbitrary code execution / crash
+# util-linux mount(8) / nsenter privilege escalation — affects util-linux,
+# mount, bsdutils, libblkid1, libmount1, libuuid1, libsmartcols1,
+# liblastlog2-2 (all HIGH). No fix in Debian trixie as of 2026-09 (status:
+# affected, 2.41.5-0+deb13u1); upstream util-linux is affected through
+# 2.41.5 / 2.42.2. Every one of these requires a local unprivileged user
+# invoking SUID mount(8) or nsenter against an fstab-authorized entry. This
+# container ships no fstab entries, mounts no volumes at runtime, never
+# invokes mount/nsenter, and runs as the non-root `appuser`.
+# Re-evaluate by 2026-11-15.
+CVE-2026-76642 exp:2026-11-15   # X-mount post-hooks run after helper failure
+CVE-2026-78408 exp:2026-11-15   # nsenter --join-cgroup leaks root authority
+CVE-2026-78409 exp:2026-11-15   # X-mount.subdir symlink escape
+CVE-2026-78410 exp:2026-11-15   # restricted bind mounts do not pin source
