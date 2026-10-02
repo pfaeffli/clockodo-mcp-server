@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Self-Service Absence Listing** (#25): New `get_my_absences(year, absence_type=None)` tool lists the authenticated user's absences for a year across all statuses (enquired, approved, declined). Each entry includes the `id` required by `delete_my_vacation` / `adjust_vacation_dates`, plus `date_since`, `date_until`, `type`, `status` and `count_days`.
 
+### Fixed
+- **HR Overtime Double-Count** (#24): `get_hr_summary` / `check_overtime_compliance` no longer add the prior-year overtime carryover on top of `diff`. Clockodo's `diff` already includes the carryover, so the previous behaviour inflated balances and produced false-positive `excessive_overtime` violations. `overtime_hours` now equals `diff / 3600`.
+
 ## [0.3.1] - 2026-01-14
 
 ### Added
