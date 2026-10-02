@@ -163,9 +163,80 @@ def test_add_my_vacation():
     result = service.add_my_vacation(date_since="2025-01-01", date_until="2025-01-05")
 
     client.create_absence.assert_called_once_with(
-        date_since="2025-01-01", date_until="2025-01-05", absence_type=1, user_id=42
+        date_since="2025-01-01",
+        date_until="2025-01-05",
+        absence_type=1,
+        user_id=42,
+        half_day=False,
     )
     assert result["absence"]["id"] == 2001
+
+
+def test_add_my_vacation_half_day():
+    """A single-day vacation can be booked as a half day."""
+    client = _absence_client()
+
+    service = UserService(client)
+    service.add_my_vacation(
+        date_since="2026-10-01", date_until="2026-10-01", half_day=True
+    )
+
+    client.create_absence.assert_called_once_with(
+        date_since="2026-10-01",
+        date_until="2026-10-01",
+        absence_type=1,
+        user_id=42,
+        half_day=True,
+    )
+
+
+def test_add_my_vacation_half_day_rejects_multiple_days():
+    """Clockodo only allows half-day absences on a single day."""
+    client = _absence_client()
+
+    service = UserService(client)
+    with pytest.raises(ValueError, match="single day"):
+        service.add_my_vacation(
+            date_since="2026-09-28", date_until="2026-10-01", half_day=True
+        )
+
+    client.create_absence.assert_not_called()
+
+
+def test_edit_my_vacation_shortens_dates():
+    """Only the given fields are sent to Clockodo."""
+    client = MagicMock()
+    client.edit_absence.return_value = {"data": {"id": 2001}}
+
+    service = UserService(client)
+    result = service.edit_my_vacation(2001, date_until="2026-09-30")
+
+    client.edit_absence.assert_called_once_with(2001, {"date_until": "2026-09-30"})
+    assert result["data"]["id"] == 2001
+
+
+def test_edit_my_vacation_sets_half_day():
+    client = MagicMock()
+
+    service = UserService(client)
+    service.edit_my_vacation(
+        2001, date_since="2026-10-01", date_until="2026-10-01", half_day=True
+    )
+
+    client.edit_absence.assert_called_once_with(
+        2001,
+        {"date_since": "2026-10-01", "date_until": "2026-10-01", "half_day": True},
+    )
+
+
+def test_edit_my_vacation_requires_a_change():
+    client = MagicMock()
+
+    service = UserService(client)
+    with pytest.raises(ValueError, match="Nothing to change"):
+        service.edit_my_vacation(2001)
+
+    client.edit_absence.assert_not_called()
 
 
 def test_get_my_entries():

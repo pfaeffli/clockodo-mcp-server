@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Half-day vacations** (#39): `add_my_vacation` takes `half_day=True` for a single-day half-day absence (Clockodo rejects multi-day half days, so the tool does too before calling the API). New `edit_my_vacation(absence_id, date_since, date_until, half_day)` changes the dates or half-day flag of your own absence, e.g. to turn a 4-day vacation into 3.5 days: shorten it to the full days and add the half day separately.
+
 ## [0.5.0] - 2026-10-02
 
 ### Added

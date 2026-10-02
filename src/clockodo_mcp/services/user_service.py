@@ -79,19 +79,50 @@ class UserService:
         self,
         date_since: str,
         date_until: str,
+        half_day: bool = False,
     ) -> dict:
         """
         Add a vacation entry for the current user.
 
-        Absence type 1 is usually 'Vacation' in Clockodo.
+        Absence type 1 is usually 'Vacation' in Clockodo. A half day must be a
+        single day (date_since == date_until).
         """
+        if half_day and date_since != date_until:
+            raise ValueError("A half-day vacation must be a single day")
         user_id = self.get_current_user_id()
         return self.client.create_absence(
             date_since=date_since,
             date_until=date_until,
             absence_type=1,
             user_id=user_id,
+            half_day=half_day,
         )
+
+    def edit_my_vacation(
+        self,
+        absence_id: int,
+        date_since: str | None = None,
+        date_until: str | None = None,
+        half_day: bool | None = None,
+    ) -> dict:
+        """
+        Change the dates or half-day flag of an absence.
+
+        Only the given fields are sent. Clockodo checks that the user may edit
+        the absence.
+        """
+        changes = {
+            field: value
+            for field, value in (
+                ("date_since", date_since),
+                ("date_until", date_until),
+                ("half_day", half_day),
+            )
+            if value is not None
+        }
+        if not changes:
+            raise ValueError("Nothing to change: pass dates or half_day")
+        return self.client.edit_absence(absence_id, changes)
 
     def get_my_absences(self, year: int, absence_type: int | None = None) -> dict:
         """List the authenticated user's absences for a year, optionally by type."""

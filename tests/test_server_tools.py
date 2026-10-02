@@ -13,6 +13,7 @@ from clockodo_mcp.tools.user_tools import (
     delete_my_entry,
     delete_my_vacation,
     edit_my_entry,
+    edit_my_vacation,
     get_my_clock,
     get_my_entries,
     start_my_clock,
@@ -209,9 +210,25 @@ def test_add_my_vacation_tool(mock_client_class):
     result = add_my_vacation(date_since="2025-01-01", date_until="2025-01-05")
 
     mock_client.create_absence.assert_called_once_with(
-        date_since="2025-01-01", date_until="2025-01-05", absence_type=1, user_id=42
+        date_since="2025-01-01",
+        date_until="2025-01-05",
+        absence_type=1,
+        user_id=42,
+        half_day=False,
     )
     assert result["absence"]["id"] == 200
+
+
+@patch("clockodo_mcp.tools.user_tools.ClockodoClient")
+def test_edit_my_vacation_tool(mock_client_class):
+    mock_client = Mock()
+    mock_client_class.from_env.return_value = mock_client
+    mock_client.edit_absence.return_value = {"data": {"id": 200}}
+
+    result = edit_my_vacation(absence_id=200, date_until="2026-09-30")
+
+    mock_client.edit_absence.assert_called_once_with(200, {"date_until": "2026-09-30"})
+    assert result["data"]["id"] == 200
 
 
 @patch("clockodo_mcp.tools.user_tools.ClockodoClient")

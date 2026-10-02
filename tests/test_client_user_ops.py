@@ -82,6 +82,29 @@ def test_create_absence():
 
 
 @respx.mock
+def test_create_absence_half_day():
+    client = ClockodoClient(api_user="u@example.com", api_key="k")
+
+    route = respx.post(f"{DEFAULT_BASE_URL}v4/absences").mock(
+        return_value=httpx.Response(201, json={"data": {"id": 2002}})
+    )
+
+    client.create_absence(
+        date_since="2026-10-01",
+        date_until="2026-10-01",
+        absence_type=1,
+        half_day=True,
+    )
+
+    assert json.loads(route.calls[0].request.content) == {
+        "date_since": "2026-10-01",
+        "date_until": "2026-10-01",
+        "type": 1,
+        "half_day": True,
+    }
+
+
+@respx.mock
 def test_create_entry():
     client = ClockodoClient(api_user="u@example.com", api_key="k")
 
