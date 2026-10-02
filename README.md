@@ -236,7 +236,8 @@ The project version is automatically managed using `setuptools-scm` based on Git
 **Rules:**
 - Version is NOT hardcoded in `pyproject.toml` (uses `dynamic = ["version"]`)
 - `src/clockodo_mcp/__init__.py` retrieves the version at runtime using `importlib.metadata` or a generated `_version.py` file
-- New releases are created by tagging the repository (e.g., `git tag v0.3.0`)
+- New releases are created by pushing a signed tag (e.g., `git tag -s v0.3.0`), then publishing the GitHub release for it with `gh release create v0.3.0 --verify-tag`
+- Publish the release before the tag's build finishes (about 7 minutes): the `attach-sbom` job uploads the SBOMs to that release. If it ran too early, publish the release and re-run only `attach-sbom`
 - The version matches semantic versioning principles
 
 ---

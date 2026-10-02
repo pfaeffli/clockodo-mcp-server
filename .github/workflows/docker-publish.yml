@@ -196,6 +196,9 @@ jobs:
           image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}-amd64
           format: 'spdx-json'
           output-file: 'sbom-amd64.spdx.json'
+          # The attach-sbom job uploads to the release; this job stays read-only
+          upload-release-assets: false
+          upload-artifact: false
 
       - name: Generate SBOM (arm64)
         if: startsWith(github.ref, 'refs/tags/v')
@@ -204,6 +207,9 @@ jobs:
           image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}-arm64
           format: 'spdx-json'
           output-file: 'sbom-arm64.spdx.json'
+          # The attach-sbom job uploads to the release; this job stays read-only
+          upload-release-assets: false
+          upload-artifact: false
 
       - name: Upload SBOMs as artifact
         if: startsWith(github.ref, 'refs/tags/v')
@@ -211,3 +217,27 @@ jobs:
         with:
           name: sbom
           path: sbom-*.spdx.json
+
+  # Attaches the SBOMs to the GitHub release. Kept separate so that only this
+  # small job holds contents: write, and build-and-scan stays read-only.
+  attach-sbom:
+    needs: build-and-scan
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download SBOMs
+        uses: actions/download-artifact@v4
+        with:
+          name: sbom
+
+      # Fails if the release doesn't exist yet. Publish the release, then
+      # re-run this job: it reuses the SBOM artifact from build-and-scan.
+      - name: Upload SBOMs to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "$GITHUB_REF_NAME" sbom-*.spdx.json \
+            --repo "$GITHUB_REPOSITORY" --clobber
