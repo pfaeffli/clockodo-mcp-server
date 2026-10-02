@@ -427,7 +427,7 @@ class ClockodoClient:
         Args:
             date_since: Start date (YYYY-MM-DD)
             date_until: End date (YYYY-MM-DD)
-            absence_type: Type of absence (1: Vacation, 2: Illness, etc.)
+            absence_type: Type of absence (1: Vacation, 2: Special leave, 4: Sick day, etc.)
             user_id: Optional user ID (if admin)
             status: Optional status (0: Enquired, 1: Approved, 2: Declined)
         """

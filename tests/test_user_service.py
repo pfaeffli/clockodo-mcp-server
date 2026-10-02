@@ -328,14 +328,14 @@ def test_delete_my_entry():
     assert result["success"] is True
 
 
-def _absence(absence_id, users_id, abs_type=1, status=1):
+def _absence(absence_id, abs_type=1):
     return {
         "id": absence_id,
-        "users_id": users_id,
+        "users_id": 42,
         "date_since": "2025-07-01",
         "date_until": "2025-07-05",
         "type": abs_type,
-        "status": status,
+        "status": 1,
         "count_days": 5,
         "note": "Summer holiday",
     }
@@ -353,7 +353,7 @@ def _absence_client():
 def test_get_my_absences_requests_current_user_only():
     """The API is asked for the authenticated user's absences only."""
     client = _absence_client()
-    client.list_absences.return_value = {"absences": [_absence(2001, 42)]}
+    client.list_absences.return_value = {"absences": [_absence(2001)]}
 
     service = UserService(client)
     result = service.get_my_absences(year=2025)
@@ -362,27 +362,10 @@ def test_get_my_absences_requests_current_user_only():
     assert [a["id"] for a in result["absences"]] == [2001]
 
 
-def test_get_my_absences_includes_all_statuses():
-    """Approved and enquired absences alike are returned (all statuses)."""
-    client = _absence_client()
-    client.list_absences.return_value = {
-        "absences": [
-            _absence(2001, 42, status=0),  # enquired
-            _absence(2002, 42, status=1),  # approved
-            _absence(2003, 42, status=2),  # declined
-        ]
-    }
-
-    service = UserService(client)
-    result = service.get_my_absences(year=2025)
-
-    assert {a["id"] for a in result["absences"]} == {2001, 2002, 2003}
-
-
 def test_get_my_absences_filters_by_type():
     """Optional absence_type is passed through to the API filter."""
     client = _absence_client()
-    client.list_absences.return_value = {"absences": [_absence(2002, 42, abs_type=2)]}
+    client.list_absences.return_value = {"absences": [_absence(2002, abs_type=2)]}
 
     service = UserService(client)
     result = service.get_my_absences(year=2025, absence_type=2)

@@ -157,7 +157,7 @@ class TeamLeaderService:
             user_id: User ID of the team member
             date_since: Start date (YYYY-MM-DD)
             date_until: End date (YYYY-MM-DD)
-            absence_type: Type of absence (1: Vacation, 2: Illness, etc.)
+            absence_type: Type of absence (1: Vacation, 2: Special leave, 4: Sick day, etc.)
             auto_approve: If True, set status to 1 (approved) immediately
 
         Returns:

@@ -94,21 +94,7 @@ class UserService:
         )
 
     def get_my_absences(self, year: int, absence_type: int | None = None) -> dict:
-        """
-        List the authenticated user's absences for a given year.
-
-        Returns absences of all statuses (enquired, approved, declined, ...),
-        each carrying the ``id`` needed by ``delete_my_vacation`` and
-        ``adjust_vacation_dates``, along with the date range, type, status and
-        day count.
-
-        Args:
-            year: Calendar year to list absences for.
-            absence_type: Optional Clockodo absence type to filter by
-                (1 = vacation, 2 = special leave, 3 = overtime reduction,
-                4 = sick day, 5 = sick day of a child). When ``None`` all
-                types are returned.
-        """
+        """List the authenticated user's absences for a year, optionally by type."""
         user_id = self.get_current_user_id()
         raw = self.client.list_absences(
             year, user_id=user_id, absence_type=absence_type
