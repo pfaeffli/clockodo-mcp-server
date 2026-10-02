@@ -18,6 +18,14 @@ if TYPE_CHECKING:
     from ..client import ClockodoClient
 
 
+def _check_half_day(
+    half_day: bool | None, date_since: str | None, date_until: str | None
+) -> None:
+    """Clockodo only allows half-day absences on a single day."""
+    if half_day and date_since != date_until:
+        raise ValueError("A half-day vacation must be a single day")
+
+
 class UserService:
     """
     Service for user-specific operations like time tracking and vacations.
@@ -87,8 +95,7 @@ class UserService:
         Absence type 1 is usually 'Vacation' in Clockodo. A half day must be a
         single day (date_since == date_until).
         """
-        if half_day and date_since != date_until:
-            raise ValueError("A half-day vacation must be a single day")
+        _check_half_day(half_day, date_since, date_until)
         user_id = self.get_current_user_id()
         return self.client.create_absence(
             date_since=date_since,
@@ -111,25 +118,23 @@ class UserService:
         Only the given fields are sent. The absence must belong to the current
         user, even if the API key could edit other users' absences.
         """
-        changes = {
-            field: value
-            for field, value in (
-                ("date_since", date_since),
-                ("date_until", date_until),
-                ("half_day", half_day),
-            )
-            if value is not None
+        fields = {
+            "date_since": date_since,
+            "date_until": date_until,
+            "half_day": half_day,
         }
+        changes = {k: v for k, v in fields.items() if v is not None}
         if not changes:
             raise ValueError("Nothing to change: pass dates or half_day")
 
         absence = self.client.get_absence(absence_id).get("data") or {}
         if absence.get("users_id") != self.get_current_user_id():
             raise PermissionError(f"Absence {absence_id} is not your absence")
-        if half_day and (date_since or absence.get("date_since")) != (
-            date_until or absence.get("date_until")
-        ):
-            raise ValueError("A half-day vacation must be a single day")
+        _check_half_day(
+            half_day,
+            date_since or absence.get("date_since"),
+            date_until or absence.get("date_until"),
+        )
 
         return self.client.edit_absence(absence_id, changes)
 

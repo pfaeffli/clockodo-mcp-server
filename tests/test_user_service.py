@@ -207,7 +207,7 @@ def _own_absence_client(date_since="2026-09-28", date_until="2026-10-01", users_
     client = _absence_client()
     client.get_absence.return_value = {
         "data": {
-            "id": 2001,
+            **_absence(2001),
             "users_id": users_id,
             "date_since": date_since,
             "date_until": date_until,
