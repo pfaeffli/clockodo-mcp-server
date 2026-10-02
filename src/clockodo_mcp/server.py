@@ -301,15 +301,42 @@ def _register_user_edit_tools():
         return user_tools.stop_my_clock()
 
     @mcp.tool()
-    def add_my_vacation(date_since: str, date_until: str) -> dict:
+    def add_my_vacation(
+        date_since: str, date_until: str, half_day: bool = False
+    ) -> dict:
         """
         Add a vacation for the authenticated user.
 
         Args:
             date_since: Start date (YYYY-MM-DD)
             date_until: End date (YYYY-MM-DD)
+            half_day: Book a half day. Clockodo only allows this for a single
+                day, so date_since must equal date_until.
         """
-        return user_tools.add_my_vacation(date_since, date_until)
+        return user_tools.add_my_vacation(date_since, date_until, half_day)
+
+    @mcp.tool()
+    def edit_my_vacation(
+        absence_id: int,
+        date_since: str | None = None,
+        date_until: str | None = None,
+        half_day: bool | None = None,
+    ) -> dict:
+        """
+        Change the dates or half-day flag of one of your absences.
+
+        Only the fields you pass are changed. Get absence ids from
+        get_my_absences. A half-day absence must cover a single day, so to
+        book e.g. 3.5 days, shorten the absence to the full days and add the
+        half day separately with add_my_vacation(..., half_day=True).
+
+        Args:
+            absence_id: ID of the absence to change
+            date_since: New start date (YYYY-MM-DD)
+            date_until: New end date (YYYY-MM-DD)
+            half_day: True for a half day, False for a full day
+        """
+        return user_tools.edit_my_vacation(absence_id, date_since, date_until, half_day)
 
     @mcp.tool()
     def add_my_time_entry(
@@ -454,7 +481,9 @@ def create_server(client=None, test_config: ServerConfig | None = None):
             if test_conf.user_read:
                 self.tool_names.extend(["get_my_time_entries", "get_my_absences"])
             if test_conf.user_edit:
-                self.tool_names.extend(["add_my_time_entry", "delete_my_vacation"])
+                self.tool_names.extend(
+                    ["add_my_time_entry", "delete_my_vacation", "edit_my_vacation"]
+                )
             if test_conf.team_leader:
                 self.tool_names.extend(
                     [

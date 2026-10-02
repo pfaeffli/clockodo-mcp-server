@@ -48,17 +48,30 @@ def stop_my_clock() -> dict:
     return service.stop_my_clock()
 
 
-def add_my_vacation(date_since: str, date_until: str) -> dict:
+def add_my_vacation(date_since: str, date_until: str, half_day: bool = False) -> dict:
     """
     Add a vacation for the authenticated user.
 
     Args:
         date_since: Start date (YYYY-MM-DD)
         date_until: End date (YYYY-MM-DD)
+        half_day: Book a half day (single day only)
     """
     client = ClockodoClient.from_env()
     service = UserService(client)
-    return service.add_my_vacation(date_since, date_until)
+    return service.add_my_vacation(date_since, date_until, half_day)
+
+
+def edit_my_vacation(
+    absence_id: int,
+    date_since: str | None = None,
+    date_until: str | None = None,
+    half_day: bool | None = None,
+) -> dict:
+    """Change the dates or half-day flag of one of the user's absences."""
+    client = ClockodoClient.from_env()
+    service = UserService(client)
+    return service.edit_my_vacation(absence_id, date_since, date_until, half_day)
 
 
 def get_my_entries(time_since: str, time_until: str) -> dict:

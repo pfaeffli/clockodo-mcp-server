@@ -420,6 +420,7 @@ class ClockodoClient:
         absence_type: int,
         user_id: int | None = None,
         status: int | None = None,
+        half_day: bool = False,
     ) -> dict:
         """
         Create a new absence (vacation, etc.).
@@ -430,6 +431,7 @@ class ClockodoClient:
             absence_type: Type of absence (1: Vacation, 2: Special leave, 4: Sick day, etc.)
             user_id: Optional user ID (if admin)
             status: Optional status (0: Enquired, 1: Approved, 2: Declined)
+            half_day: Book a half day (Clockodo allows this for a single day only)
         """
         data = {
             "date_since": date_since,
@@ -440,7 +442,13 @@ class ClockodoClient:
             data["users_id"] = user_id
         if status is not None:
             data["status"] = status
+        if half_day:
+            data["half_day"] = True
         return self._request("POST", "v4/absences", json_data=data)
+
+    def get_absence(self, absence_id: int) -> dict:
+        """Get a single absence (v4 API)."""
+        return self._request("GET", f"v4/absences/{absence_id}")
 
     def edit_absence(self, absence_id: int, data: dict) -> dict:
         """

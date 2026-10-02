@@ -163,9 +163,126 @@ def test_add_my_vacation():
     result = service.add_my_vacation(date_since="2025-01-01", date_until="2025-01-05")
 
     client.create_absence.assert_called_once_with(
-        date_since="2025-01-01", date_until="2025-01-05", absence_type=1, user_id=42
+        date_since="2025-01-01",
+        date_until="2025-01-05",
+        absence_type=1,
+        user_id=42,
+        half_day=False,
     )
     assert result["absence"]["id"] == 2001
+
+
+def test_add_my_vacation_half_day():
+    """A single-day vacation can be booked as a half day."""
+    client = _absence_client()
+
+    service = UserService(client)
+    service.add_my_vacation(
+        date_since="2026-10-01", date_until="2026-10-01", half_day=True
+    )
+
+    client.create_absence.assert_called_once_with(
+        date_since="2026-10-01",
+        date_until="2026-10-01",
+        absence_type=1,
+        user_id=42,
+        half_day=True,
+    )
+
+
+def test_add_my_vacation_half_day_rejects_multiple_days():
+    """Clockodo only allows half-day absences on a single day."""
+    client = _absence_client()
+
+    service = UserService(client)
+    with pytest.raises(ValueError, match="single day"):
+        service.add_my_vacation(
+            date_since="2026-09-28", date_until="2026-10-01", half_day=True
+        )
+
+    client.create_absence.assert_not_called()
+
+
+def _own_absence_client(date_since="2026-09-28", date_until="2026-10-01", users_id=42):
+    client = _absence_client()
+    client.get_absence.return_value = {
+        "data": {
+            **_absence(2001),
+            "users_id": users_id,
+            "date_since": date_since,
+            "date_until": date_until,
+        }
+    }
+    return client
+
+
+def test_edit_my_vacation_shortens_dates():
+    """Only the given fields are sent to Clockodo."""
+    client = _own_absence_client()
+    client.edit_absence.return_value = {"data": {"id": 2001}}
+
+    service = UserService(client)
+    result = service.edit_my_vacation(2001, date_until="2026-09-30")
+
+    client.get_absence.assert_called_once_with(2001)
+    client.edit_absence.assert_called_once_with(2001, {"date_until": "2026-09-30"})
+    assert result["data"]["id"] == 2001
+
+
+def test_edit_my_vacation_sets_half_day():
+    client = _own_absence_client(date_since="2026-10-01", date_until="2026-10-01")
+
+    service = UserService(client)
+    service.edit_my_vacation(2001, half_day=True)
+
+    client.edit_absence.assert_called_once_with(2001, {"half_day": True})
+
+
+def test_edit_my_vacation_half_day_rejects_multiple_days():
+    """Half day on an absence that still spans several days is refused."""
+    client = _own_absence_client(date_since="2026-09-28", date_until="2026-10-01")
+
+    service = UserService(client)
+    with pytest.raises(ValueError, match="single day"):
+        service.edit_my_vacation(2001, half_day=True)
+
+    client.edit_absence.assert_not_called()
+
+
+def test_edit_my_vacation_half_day_with_new_single_date():
+    """New dates are checked, not the stored ones."""
+    client = _own_absence_client(date_since="2026-09-28", date_until="2026-10-01")
+
+    service = UserService(client)
+    service.edit_my_vacation(
+        2001, date_since="2026-10-01", date_until="2026-10-01", half_day=True
+    )
+
+    client.edit_absence.assert_called_once_with(
+        2001,
+        {"date_since": "2026-10-01", "date_until": "2026-10-01", "half_day": True},
+    )
+
+
+def test_edit_my_vacation_rejects_other_users_absence():
+    """A team-leader key must not let the user tools edit a colleague's absence."""
+    client = _own_absence_client(users_id=99)
+
+    service = UserService(client)
+    with pytest.raises(PermissionError, match="not your absence"):
+        service.edit_my_vacation(2001, date_until="2026-09-30")
+
+    client.edit_absence.assert_not_called()
+
+
+def test_edit_my_vacation_requires_a_change():
+    client = MagicMock()
+
+    service = UserService(client)
+    with pytest.raises(ValueError, match="Nothing to change"):
+        service.edit_my_vacation(2001)
+
+    client.edit_absence.assert_not_called()
 
 
 def test_get_my_entries():
