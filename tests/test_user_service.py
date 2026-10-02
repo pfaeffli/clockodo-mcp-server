@@ -350,22 +350,16 @@ def _absence_client():
     return client
 
 
-def test_get_my_absences_filters_to_current_user():
-    """Only the authenticated user's absences should be returned."""
+def test_get_my_absences_requests_current_user_only():
+    """The API is asked for the authenticated user's absences only."""
     client = _absence_client()
-    client.list_absences.return_value = {
-        "absences": [
-            _absence(2001, 42),
-            _absence(2002, 99),  # another user, must be filtered out
-        ]
-    }
+    client.list_absences.return_value = {"absences": [_absence(2001, 42)]}
 
     service = UserService(client)
     result = service.get_my_absences(year=2025)
 
-    client.list_absences.assert_called_once_with(2025)
-    ids = [a["id"] for a in result["absences"]]
-    assert ids == [2001]
+    client.list_absences.assert_called_once_with(2025, user_id=42, absence_type=None)
+    assert [a["id"] for a in result["absences"]] == [2001]
 
 
 def test_get_my_absences_includes_all_statuses():
@@ -386,18 +380,14 @@ def test_get_my_absences_includes_all_statuses():
 
 
 def test_get_my_absences_filters_by_type():
-    """Optional absence_type narrows results to a single type."""
+    """Optional absence_type is passed through to the API filter."""
     client = _absence_client()
-    client.list_absences.return_value = {
-        "absences": [
-            _absence(2001, 42, abs_type=1),  # vacation
-            _absence(2002, 42, abs_type=2),  # illness
-        ]
-    }
+    client.list_absences.return_value = {"absences": [_absence(2002, 42, abs_type=2)]}
 
     service = UserService(client)
     result = service.get_my_absences(year=2025, absence_type=2)
 
+    client.list_absences.assert_called_once_with(2025, user_id=42, absence_type=2)
     assert [a["id"] for a in result["absences"]] == [2002]
 
 

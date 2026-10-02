@@ -158,6 +158,37 @@ def test_list_absences():
 
 
 @respx.mock
+def test_list_absences_filters_by_user_and_type():
+    client = ClockodoClient(api_user="u@example.com", api_key="k")
+
+    route = respx.get(f"{DEFAULT_BASE_URL}v4/absences").mock(
+        return_value=httpx.Response(200, json={"data": []})
+    )
+
+    client.list_absences(year=2025, user_id=42, absence_type=1)
+
+    params = route.calls[0].request.url.params
+    assert params.get("filter[year]") == "2025"
+    assert params.get("filter[users_id]") == "42"
+    assert params.get("filter[type]") == "1"
+
+
+@respx.mock
+def test_list_absences_omits_unset_filters():
+    client = ClockodoClient(api_user="u@example.com", api_key="k")
+
+    route = respx.get(f"{DEFAULT_BASE_URL}v4/absences").mock(
+        return_value=httpx.Response(200, json={"data": []})
+    )
+
+    client.list_absences(year=2025)
+
+    params = route.calls[0].request.url.params
+    assert "filter[users_id]" not in params
+    assert "filter[type]" not in params
+
+
+@respx.mock
 def test_edit_entry():
     client = ClockodoClient(api_user="u@example.com", api_key="k")
 

@@ -110,15 +110,10 @@ class UserService:
                 types are returned.
         """
         user_id = self.get_current_user_id()
-        raw = self.client.list_absences(year)
-
-        absences = [
-            absence
-            for absence in raw.get("absences") or []
-            if absence.get("users_id") == user_id
-            and (absence_type is None or absence.get("type") == absence_type)
-        ]
-        return {"absences": absences}
+        raw = self.client.list_absences(
+            year, user_id=user_id, absence_type=absence_type
+        )
+        return {"absences": raw.get("absences") or []}
 
     def get_my_entries(self, time_since: str, time_until: str) -> dict:
         """Get time entries for the current user."""
