@@ -10,13 +10,15 @@ on:
     #   - "src/**/*.js"
     #   - "src/**/*.jsx"
 
+# A new push supersedes the running review, so only the latest commit gets comments
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   claude-review:
-    # Optional: Filter by PR author
-    # if: |
-    #   github.event.pull_request.user.login == 'external-contributor' ||
-    #   github.event.pull_request.user.login == 'new-developer' ||
-    #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
+    # Fork PRs get no secrets or OIDC token, so the review would always fail there
+    if: github.event.pull_request.head.repo.full_name == github.repository
 
     runs-on: ubuntu-latest
     permissions:
