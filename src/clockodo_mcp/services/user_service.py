@@ -106,10 +106,10 @@ class UserService:
         half_day: bool | None = None,
     ) -> dict:
         """
-        Change the dates or half-day flag of an absence.
+        Change the dates or half-day flag of one of the current user's absences.
 
-        Only the given fields are sent. Clockodo checks that the user may edit
-        the absence.
+        Only the given fields are sent. The absence must belong to the current
+        user, even if the API key could edit other users' absences.
         """
         changes = {
             field: value
@@ -122,6 +122,15 @@ class UserService:
         }
         if not changes:
             raise ValueError("Nothing to change: pass dates or half_day")
+
+        absence = self.client.get_absence(absence_id).get("data") or {}
+        if absence.get("users_id") != self.get_current_user_id():
+            raise PermissionError(f"Absence {absence_id} is not your absence")
+        if half_day and (date_since or absence.get("date_since")) != (
+            date_until or absence.get("date_until")
+        ):
+            raise ValueError("A half-day vacation must be a single day")
+
         return self.client.edit_absence(absence_id, changes)
 
     def get_my_absences(self, year: int, absence_type: int | None = None) -> dict:

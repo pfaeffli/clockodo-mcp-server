@@ -223,6 +223,18 @@ def test_add_my_vacation_tool(mock_client_class):
 def test_edit_my_vacation_tool(mock_client_class):
     mock_client = Mock()
     mock_client_class.from_env.return_value = mock_client
+    mock_client.api_user = "me@example.com"
+    mock_client.list_users.return_value = {
+        "users": [{"id": 42, "email": "me@example.com"}]
+    }
+    mock_client.get_absence.return_value = {
+        "data": {
+            "id": 200,
+            "users_id": 42,
+            "date_since": "2026-09-28",
+            "date_until": "2026-10-01",
+        }
+    }
     mock_client.edit_absence.return_value = {"data": {"id": 200}}
 
     result = edit_my_vacation(absence_id=200, date_until="2026-09-30")

@@ -446,6 +446,10 @@ class ClockodoClient:
             data["half_day"] = True
         return self._request("POST", "v4/absences", json_data=data)
 
+    def get_absence(self, absence_id: int) -> dict:
+        """Get a single absence (v4 API)."""
+        return self._request("GET", f"v4/absences/{absence_id}")
+
     def edit_absence(self, absence_id: int, data: dict) -> dict:
         """
         Edit an existing absence.
