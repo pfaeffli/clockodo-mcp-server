@@ -93,6 +93,14 @@ class UserService:
             user_id=user_id,
         )
 
+    def get_my_absences(self, year: int, absence_type: int | None = None) -> dict:
+        """List the authenticated user's absences for a year, optionally by type."""
+        user_id = self.get_current_user_id()
+        raw = self.client.list_absences(
+            year, user_id=user_id, absence_type=absence_type
+        )
+        return {"absences": raw.get("absences") or []}
+
     def get_my_entries(self, time_since: str, time_until: str) -> dict:
         """Get time entries for the current user."""
         user_id = self.get_current_user_id()

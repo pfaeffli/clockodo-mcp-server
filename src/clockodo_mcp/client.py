@@ -388,9 +388,26 @@ class ClockodoClient:
     # Absences (v4)
     # ==============================================
 
-    def list_absences(self, year: int) -> dict:
-        """List absences for a year (v4 API)."""
-        resp = self._request("GET", "v4/absences", params={"filter[year]": year})
+    def list_absences(
+        self,
+        year: int,
+        user_id: int | None = None,
+        absence_type: int | None = None,
+    ) -> dict:
+        """
+        List absences for a year (v4 API).
+
+        Args:
+            year: Calendar year to list absences for
+            user_id: Optional user ID to filter absences
+            absence_type: Optional absence type to filter absences
+        """
+        params: dict[str, int] = {"filter[year]": year}
+        if user_id is not None:
+            params["filter[users_id]"] = user_id
+        if absence_type is not None:
+            params["filter[type]"] = absence_type
+        resp = self._request("GET", "v4/absences", params=params)
         # Normalize v4 response
         if "data" in resp and "absences" not in resp:
             resp["absences"] = resp["data"]
@@ -410,7 +427,7 @@ class ClockodoClient:
         Args:
             date_since: Start date (YYYY-MM-DD)
             date_until: End date (YYYY-MM-DD)
-            absence_type: Type of absence (1: Vacation, 2: Illness, etc.)
+            absence_type: Type of absence (1: Vacation, 2: Special leave, 4: Sick day, etc.)
             user_id: Optional user ID (if admin)
             status: Optional status (0: Enquired, 1: Approved, 2: Declined)
         """
