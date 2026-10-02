@@ -7,11 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-02
+
 ### Added
-- **Self-Service Absence Listing** (#25): New `get_my_absences(year, absence_type=None)` tool lists the authenticated user's absences for a year across all statuses (enquired, approved, declined). Each entry includes the `id` required by `delete_my_vacation` / `adjust_vacation_dates`, plus `date_since`, `date_until`, `type`, `status` and `count_days`.
+- **Self-Service Absence Listing** (#25, #27): New `get_my_absences(year, absence_type=None)` tool lists the authenticated user's absences for a year across all statuses (enquired, approved, declined, cancelled). Each entry includes the `id` required by `delete_my_vacation` / `adjust_vacation_dates`, plus `date_since`, `date_until`, `type`, `status` and `count_days`. Filtering by user and type happens server-side via `filter[users_id]` / `filter[type]`.
+- **Claude Code GitHub workflows** (#32): Automatic Claude code review on same-repo PRs (skipped for forks, superseded runs cancelled) and `@claude` mentions in issues and PRs.
 
 ### Fixed
 - **HR Overtime Double-Count** (#24): `get_hr_summary` / `check_overtime_compliance` no longer add the prior-year overtime carryover on top of `diff`. Clockodo's `diff` already includes the carryover, so the previous behaviour inflated balances and produced false-positive `excessive_overtime` violations. `overtime_hours` now equals `diff / 3600`.
+- **Absence type docs**: Docstrings for `add_absence` / team-leader absence tools now match Clockodo's codes (2 = special leave, 3 = overtime reduction, 4 = sick day); type 2 was previously documented as "Illness".
+
+### Security
+- **Dependabot alerts cleared** (#28, #31): Runtime floors `anyio>=4.14.2` (critical TLS host-name spoofing) and `idna>=3.15`; dev dependencies bumped (black, wheel, pytest, python-dotenv, pygments).
+- **Trivy waivers** (#29, #31): Unfixable Debian base-image CVEs triaged in `.trivyignore` with expiry dates and reachability notes; expired waivers refreshed; `pip` dropped from the runtime image.
+- **CI determinism**: Pinned `mcp<2` and `ruff` to match the lockfile.
+
+## [0.4.1] - 2026-05-10
+
+See the [v0.4.1 release notes](https://github.com/pfaeffli/clockodo-mcp-server/releases/tag/v0.4.1).
+
+## [0.4.0] - 2026-02-15
+
+See the [v0.4.0 release notes](https://github.com/pfaeffli/clockodo-mcp-server/releases/tag/v0.4.0).
+
+## [0.3.2] - 2026-02-10
+
+See the [v0.3.2 release notes](https://github.com/pfaeffli/clockodo-mcp-server/releases/tag/v0.3.2).
 
 ## [0.3.1] - 2026-01-14
 
