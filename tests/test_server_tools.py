@@ -206,6 +206,7 @@ def test_add_my_vacation_tool(mock_client_class):
     mock_client.list_users.return_value = {
         "users": [{"id": 42, "email": "me@example.com"}]
     }
+    mock_client.get_me.return_value = {"data": {"id": 42}}
     mock_client.create_absence.return_value = {"absence": {"id": 200}}
 
     result = add_my_vacation(date_since="2025-01-01", date_until="2025-01-05")
@@ -228,6 +229,7 @@ def test_edit_my_vacation_tool(mock_client_class):
     mock_client.list_users.return_value = {
         "users": [{"id": 42, "email": "me@example.com"}]
     }
+    mock_client.get_me.return_value = {"data": {"id": 42}}
     mock_client.get_absence.return_value = {
         "data": {
             "id": 200,
@@ -264,6 +266,7 @@ def test_get_my_entries_tool(mock_client_class):
     mock_client.list_users.return_value = {
         "users": [{"id": 42, "email": "me@example.com"}]
     }
+    mock_client.get_me.return_value = {"data": {"id": 42}}
     mock_client.list_entries.return_value = {"entries": [{"id": 100}]}
 
     result = get_my_entries(
@@ -282,6 +285,7 @@ def test_add_my_entry_tool(mock_client_class):
     mock_client.list_users.return_value = {
         "users": [{"id": 42, "email": "me@example.com"}]
     }
+    mock_client.get_me.return_value = {"data": {"id": 42}}
     mock_client.create_entry.return_value = {"entry": {"id": 300}}
 
     result = add_my_entry(
@@ -304,6 +308,7 @@ def test_add_my_entry_tool_with_text(mock_client_class):
     mock_client.list_users.return_value = {
         "users": [{"id": 42, "email": "me@example.com"}]
     }
+    mock_client.get_me.return_value = {"data": {"id": 42}}
     mock_client.create_entry.return_value = {
         "entry": {"id": 301, "text": "Test description", "texts_id": 999}
     }
@@ -338,6 +343,7 @@ def test_edit_my_entry_tool(mock_client_class):
     mock_client.list_users.return_value = {
         "users": [{"id": 42, "email": "me@example.com"}]
     }
+    mock_client.get_me.return_value = {"data": {"id": 42}}
     mock_client.get_entry.return_value = {"entry": {"id": 300, "users_id": 42}}
     mock_client.edit_entry.return_value = {"entry": {"id": 300, "text": "Updated"}}
 
@@ -355,6 +361,7 @@ def test_delete_my_entry_tool(mock_client_class):
     mock_client.list_users.return_value = {
         "users": [{"id": 42, "email": "me@example.com"}]
     }
+    mock_client.get_me.return_value = {"data": {"id": 42}}
     mock_client.get_entry.return_value = {"entry": {"id": 300, "users_id": 42}}
     mock_client.delete_entry.return_value = {"success": True}
 
@@ -372,6 +379,7 @@ def test_delete_my_vacation_tool(mock_client_class):
     mock_client.list_users.return_value = {
         "users": [{"id": 42, "email": "me@example.com"}]
     }
+    mock_client.get_me.return_value = {"data": {"id": 42}}
     mock_client.get_absence.return_value = {"data": {"id": 200, "users_id": 42}}
     mock_client.delete_absence.return_value = {"success": True}
 
@@ -403,6 +411,7 @@ def test_add_my_sick_day_tool(mock_client_class):
     mock_client.list_users.return_value = {
         "users": [{"id": 42, "email": "me@example.com"}]
     }
+    mock_client.get_me.return_value = {"data": {"id": 42}}
     mock_client.create_absence.return_value = {"data": {"id": 300}}
 
     result = add_my_sick_day(
