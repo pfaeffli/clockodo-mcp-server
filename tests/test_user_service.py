@@ -519,15 +519,61 @@ def _own_entry_client(users_id=42):
 
 
 def test_edit_my_entry():
-    """Test editing an entry."""
+    """Only passed fields reach the API; times are normalised to UTC."""
     client = _own_entry_client()
     client.edit_entry.return_value = {"entry": {"id": 3001, "text": "Updated"}}
 
     service = UserService(client)
-    result = service.edit_my_entry(entry_id=3001, data={"text": "Updated"})
+    result = service.edit_my_entry(
+        entry_id=3001,
+        time_since="2025-01-01T10:00:00+01:00",
+        time_until="2025-01-01T11:00:00Z",
+        text="Updated",
+        customers_id=1,
+        services_id=2,
+        projects_id=3,
+        billable=0,
+    )
 
-    client.edit_entry.assert_called_once_with(3001, {"text": "Updated"})
+    client.edit_entry.assert_called_once_with(
+        3001,
+        {
+            "time_since": "2025-01-01T09:00:00Z",
+            "time_until": "2025-01-01T11:00:00Z",
+            "text": "Updated",
+            "customers_id": 1,
+            "services_id": 2,
+            "projects_id": 3,
+            "billable": 0,
+        },
+    )
     assert result["entry"]["text"] == "Updated"
+
+
+def test_edit_my_entry_sends_only_passed_params():
+    client = _own_entry_client()
+
+    UserService(client).edit_my_entry(entry_id=3001, billable=0, text="")
+
+    client.edit_entry.assert_called_once_with(3001, {"text": "", "billable": 0})
+
+
+def test_edit_my_entry_requires_a_change():
+    client = _own_entry_client()
+
+    with pytest.raises(ValueError, match="at least one"):
+        UserService(client).edit_my_entry(entry_id=3001)
+
+    client.edit_entry.assert_not_called()
+
+
+def test_edit_my_entry_rejects_invalid_billable():
+    client = _own_entry_client()
+
+    with pytest.raises(ValueError, match="billable"):
+        UserService(client).edit_my_entry(entry_id=3001, billable=5)
+
+    client.edit_entry.assert_not_called()
 
 
 def test_edit_my_entry_rejects_other_users_entry():
@@ -535,29 +581,21 @@ def test_edit_my_entry_rejects_other_users_entry():
 
     service = UserService(client)
     with pytest.raises(PermissionError, match="Entry 3001 is not your entry"):
-        service.edit_my_entry(entry_id=3001, data={"text": "Updated"})
+        service.edit_my_entry(entry_id=3001, text="Updated")
 
     client.edit_entry.assert_not_called()
 
 
-def test_edit_my_entry_rejects_reassigning_to_other_user():
-    """Editing your own entry must not hand it to another user."""
+def test_edit_my_entry_cannot_take_users_id():
+    """Reassigning an entry is impossible: users_id is not a parameter."""
     client = _own_entry_client()
 
-    service = UserService(client)
-    with pytest.raises(PermissionError, match="another user"):
-        service.edit_my_entry(entry_id=3001, data={"users_id": 99})
+    with pytest.raises(TypeError):
+        UserService(client).edit_my_entry(  # type: ignore[call-arg]  # pylint: disable=unexpected-keyword-arg
+            entry_id=3001, users_id=99
+        )
 
     client.edit_entry.assert_not_called()
-
-
-def test_edit_my_entry_allows_own_users_id():
-    client = _own_entry_client()
-
-    service = UserService(client)
-    service.edit_my_entry(entry_id=3001, data={"users_id": 42, "text": "x"})
-
-    client.edit_entry.assert_called_once_with(3001, {"users_id": 42, "text": "x"})
 
 
 def test_delete_my_entry():

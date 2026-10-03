@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 import httpx
 
 from ..date_utils import normalize_datetime
+from .entry_changes import build_entry_changes
 
 if TYPE_CHECKING:
     from ..client import ClockodoClient
@@ -224,20 +225,35 @@ class UserService:
             user_id=user_id,
         )
 
-    def edit_my_entry(self, entry_id: int, data: dict) -> dict:
+    def edit_my_entry(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        self,
+        entry_id: int,
+        time_since: str | None = None,
+        time_until: str | None = None,
+        text: str | None = None,
+        customers_id: int | None = None,
+        services_id: int | None = None,
+        projects_id: int | None = None,
+        billable: int | None = None,
+    ) -> dict:
         """
         Edit one of the current user's time entries.
 
         The entry must belong to the current user, even if the API key could
-        edit other users' entries.
+        edit other users' entries. Only the params that are passed change;
+        users_id is not editable, so the entry can't be handed to someone else.
         """
+        changes = build_entry_changes(
+            time_since=time_since,
+            time_until=time_until,
+            text=text,
+            customers_id=customers_id,
+            services_id=services_id,
+            projects_id=projects_id,
+            billable=billable,
+        )
         self._get_own_entry(entry_id)
-        if (
-            data.get("users_id", self.get_current_user_id())
-            != self.get_current_user_id()
-        ):
-            raise PermissionError(f"Entry {entry_id} can't be moved to another user")
-        return self.client.edit_entry(entry_id, data)
+        return self.client.edit_entry(entry_id, changes)
 
     def delete_my_entry(self, entry_id: int) -> dict:
         """Delete one of the current user's time entries."""

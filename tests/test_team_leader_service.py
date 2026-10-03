@@ -29,6 +29,18 @@ def service(client):
     return TeamLeaderService(lambda: client)
 
 
+ME = 7
+
+
+def _mock_me_and_absence(client, absence_id, owner):
+    respx.get(f"{client.base_url}v4/users/me").mock(
+        return_value=Response(200, json={"data": {"id": ME}})
+    )
+    respx.get(f"{client.base_url}v4/absences/{absence_id}").mock(
+        return_value=Response(200, json={"data": {"id": absence_id, "users_id": owner}})
+    )
+
+
 @respx.mock
 def test_approve_vacation(service, client):
     """Test approving a vacation request."""
@@ -41,6 +53,7 @@ def test_approve_vacation(service, client):
         }
     }
 
+    _mock_me_and_absence(client, 123, owner=42)
     respx.put(f"{client.base_url}v4/absences/123").mock(
         return_value=Response(200, json=mock_response)
     )
@@ -63,6 +76,7 @@ def test_reject_vacation(service, client):
         }
     }
 
+    _mock_me_and_absence(client, 123, owner=42)
     respx.put(f"{client.base_url}v4/absences/123").mock(
         return_value=Response(200, json=mock_response)
     )
@@ -134,7 +148,7 @@ def test_edit_team_entry(service, client):
         return_value=Response(200, json=mock_response)
     )
 
-    result = service.edit_team_entry(456, {"text": "Updated description"})
+    result = service.edit_team_entry(456, text="Updated description")
 
     assert result == mock_response
     assert result["entry"]["text"] == "Updated description"
@@ -165,6 +179,7 @@ def test_adjust_vacation_length(service, client):
         }
     }
 
+    _mock_me_and_absence(client, 123, owner=42)
     respx.put(f"{client.base_url}v4/absences/123").mock(
         return_value=Response(200, json=mock_response)
     )
@@ -190,6 +205,9 @@ def test_create_team_vacation_auto_approve(service, client):
         }
     }
 
+    respx.get(f"{client.base_url}v4/users/me").mock(
+        return_value=Response(200, json={"data": {"id": ME}})
+    )
     respx.post(f"{client.base_url}v4/absences").mock(
         return_value=Response(200, json=mock_response)
     )
@@ -275,3 +293,127 @@ def test_create_team_vacation_no_sick_note_for_vacation(service, client):
     )
 
     assert "sick_note" not in json.loads(route.calls[0].request.content)
+
+
+@respx.mock
+def test_edit_team_entry_sends_normalised_typed_fields(service, client):
+    route = respx.put(f"{client.base_url}v2/entries/456").mock(
+        return_value=Response(200, json={"entry": {"id": 456}})
+    )
+
+    service.edit_team_entry(
+        456,
+        time_since="2025-01-15T10:00:00+01:00",
+        time_until="2025-01-15T12:00:00Z",
+        billable=2,
+    )
+
+    assert json.loads(route.calls[0].request.content) == {
+        "time_since": "2025-01-15T09:00:00Z",
+        "time_until": "2025-01-15T12:00:00Z",
+        "billable": 2,
+    }
+
+
+@respx.mock
+def test_edit_team_entry_requires_a_change(service, client):
+    route = respx.put(f"{client.base_url}v2/entries/456")
+
+    with pytest.raises(ValueError, match="at least one"):
+        service.edit_team_entry(456)
+
+    assert not route.called
+
+
+@respx.mock
+def test_edit_team_entry_cannot_change_users_id(service):
+    with pytest.raises(TypeError):
+        service.edit_team_entry(456, users_id=99)  # type: ignore[call-arg]
+
+
+@respx.mock
+@pytest.mark.parametrize("method", ["approve_vacation", "reject_vacation"])
+def test_decide_vacation_refuses_own_absence(service, client, method):
+    _mock_me_and_absence(client, 123, owner=ME)
+    route = respx.put(f"{client.base_url}v4/absences/123")
+
+    with pytest.raises(PermissionError, match="your own"):
+        getattr(service, method)(123)
+
+    assert not route.called
+
+
+@respx.mock
+def test_adjust_vacation_length_refuses_own_absence(service, client):
+    _mock_me_and_absence(client, 123, owner=ME)
+    route = respx.put(f"{client.base_url}v4/absences/123")
+
+    with pytest.raises(PermissionError, match="edit_my_vacation"):
+        service.adjust_vacation_length(123, "2025-01-12", "2025-01-14")
+
+    assert not route.called
+
+
+@respx.mock
+def test_current_user_id_is_cached(service, client):
+    me = respx.get(f"{client.base_url}v4/users/me").mock(
+        return_value=Response(200, json={"data": {"id": ME}})
+    )
+    respx.get(f"{client.base_url}v4/absences/123").mock(
+        return_value=Response(200, json={"data": {"id": 123, "users_id": 42}})
+    )
+    respx.put(f"{client.base_url}v4/absences/123").mock(
+        return_value=Response(200, json={})
+    )
+
+    service.approve_vacation(123)
+    service.reject_vacation(123)
+
+    assert me.call_count == 1
+
+
+@respx.mock
+def test_create_team_vacation_defaults_to_not_approved(service, client):
+    route = respx.post(f"{client.base_url}v4/absences").mock(
+        return_value=Response(200, json={"data": {"id": 1}})
+    )
+
+    service.create_team_vacation(
+        user_id=42, date_since="2025-02-10", date_until="2025-02-10"
+    )
+
+    assert json.loads(route.calls[0].request.content)["status"] == 0
+
+
+@respx.mock
+def test_create_team_vacation_refuses_self_approval(service, client):
+    respx.get(f"{client.base_url}v4/users/me").mock(
+        return_value=Response(200, json={"data": {"id": ME}})
+    )
+    route = respx.post(f"{client.base_url}v4/absences")
+
+    with pytest.raises(PermissionError, match="auto-approve"):
+        service.create_team_vacation(
+            user_id=ME,
+            date_since="2025-02-10",
+            date_until="2025-02-10",
+            auto_approve=True,
+        )
+
+    assert not route.called
+
+
+@respx.mock
+def test_create_team_vacation_for_self_without_auto_approve(service, client):
+    respx.get(f"{client.base_url}v4/users/me").mock(
+        return_value=Response(200, json={"data": {"id": ME}})
+    )
+    route = respx.post(f"{client.base_url}v4/absences").mock(
+        return_value=Response(200, json={"data": {"id": 1}})
+    )
+
+    service.create_team_vacation(
+        user_id=ME, date_since="2025-02-10", date_until="2025-02-10"
+    )
+
+    assert json.loads(route.calls[0].request.content)["status"] == 0

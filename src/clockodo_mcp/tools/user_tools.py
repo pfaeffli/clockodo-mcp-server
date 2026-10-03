@@ -148,17 +148,34 @@ def add_my_entry(
     )
 
 
-def edit_my_entry(entry_id: int, data: dict) -> dict:
+def edit_my_entry(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    entry_id: int,
+    time_since: str | None = None,
+    time_until: str | None = None,
+    text: str | None = None,
+    customers_id: int | None = None,
+    services_id: int | None = None,
+    projects_id: int | None = None,
+    billable: int | None = None,
+) -> dict:
     """
-    Edit a time entry for the authenticated user.
+    Edit a time entry for the authenticated user (only passed fields change).
 
     Args:
         entry_id: ID of the entry to edit
-        data: Dictionary of fields to update (e.g., {"text": "new description"})
     """
     client = ClockodoClient.from_env()
     service = UserService(client)
-    return service.edit_my_entry(entry_id, data)
+    return service.edit_my_entry(
+        entry_id,
+        time_since=time_since,
+        time_until=time_until,
+        text=text,
+        customers_id=customers_id,
+        services_id=services_id,
+        projects_id=projects_id,
+        billable=billable,
+    )
 
 
 def delete_my_entry(entry_id: int) -> dict:
@@ -177,9 +194,12 @@ def delete_my_vacation(absence_id: int) -> dict:
     """
     Delete a vacation/absence for the authenticated user.
 
+    Approved absences are withdrawn (cancelled) first, as Clockodo refuses to
+    delete them otherwise.
+
     Args:
         absence_id: ID of the absence to delete
     """
     client = ClockodoClient.from_env()
     service = UserService(client)
-    return service.delete_my_vacation(absence_id)
+    return service.delete_my_vacation(absence_id, auto_cancel=True)

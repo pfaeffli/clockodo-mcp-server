@@ -410,20 +410,20 @@ The following are still supported but deprecated. Use `CLOCKODO_MCP_ROLE` instea
 - `start_my_clock(...)` - Start tracking time
 - `stop_my_clock()` - Stop tracking time
 - `add_my_time_entry(...)` - Add a manual time entry
-- `edit_my_time_entry(entry_id, data)` - Edit your time entry
+- `edit_my_time_entry(entry_id, time_since=None, time_until=None, text=None, customers_id=None, services_id=None, projects_id=None, billable=None)` - Edit your time entry; only passed fields change (`billable`: 0/1/2; times as in `add_my_time_entry`)
 - `delete_my_time_entry(entry_id)` - Delete your time entry
 - `add_my_vacation(date_since, date_until, half_day=False)` - Request vacation; `half_day=True` books a half day (single day only)
 - `add_my_sick_day(date_since, date_until, sick_note=False, child=False)` - Report a sick day; `child=True` books a sick day of a child
 - `edit_my_vacation(absence_id, date_since=None, date_until=None, half_day=None)` - Change the dates or half-day flag of your absence
-- `delete_my_vacation(absence_id)` - Delete vacation request
+- `delete_my_vacation(absence_id)` - Delete an absence; approved absences are withdrawn (cancelled) first
 
 ### Team Leader Tools (when `TEAM_LEADER` enabled)
 - `list_pending_vacation_requests(year)` - List all pending vacation requests
-- `approve_vacation_request(absence_id)` - Approve a vacation request
-- `reject_vacation_request(absence_id)` - Reject a vacation request
-- `adjust_vacation_dates(absence_id, new_date_since, new_date_until)` - Adjust vacation length
-- `create_team_member_vacation(user_id, date_since, date_until, ...)` - Create vacation for team member
-- `edit_team_member_entry(entry_id, data)` - Edit team member's time entry
+- `approve_vacation_request(absence_id)` - Approve a vacation request (refused for your own absence)
+- `reject_vacation_request(absence_id)` - Reject a vacation request (refused for your own absence)
+- `adjust_vacation_dates(absence_id, new_date_since, new_date_until)` - Adjust vacation length (refused for your own absence; use `edit_my_vacation`)
+- `create_team_member_vacation(user_id, date_since, date_until, ...)` - Create vacation for team member; pending unless `auto_approve=True` (default `False`, refused for yourself)
+- `edit_team_member_entry(entry_id, time_since=None, time_until=None, text=None, customers_id=None, services_id=None, projects_id=None, billable=None)` - Edit a team member's time entry; only passed fields change, the entry can't change user
 - `delete_team_member_entry(entry_id)` - Delete team member's time entry
 
 ## Development

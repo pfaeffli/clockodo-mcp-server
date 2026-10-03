@@ -418,15 +418,41 @@ def _register_user_edit_tools(srv: MCPServer) -> None:
         )
 
     @srv.tool(annotations=DESTRUCTIVE_IDEMPOTENT)
-    def edit_my_time_entry(entry_id: int, data: dict) -> dict:
+    def edit_my_time_entry(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        entry_id: int,
+        time_since: str | None = None,
+        time_until: str | None = None,
+        text: str | None = None,
+        customers_id: int | None = None,
+        services_id: int | None = None,
+        projects_id: int | None = None,
+        billable: int | None = None,
+    ) -> dict:
         """
-        Edit a time entry for the authenticated user.
+        Edit one of your time entries. Only the fields you pass are changed.
+
+        Pass at least one field.
 
         Args:
             entry_id: ID of the entry to edit
-            data: Dictionary of fields to update (e.g., {"text": "new description"})
+            time_since: New start time: local Europe/Zurich time or any ISO 8601 with offset (sent to Clockodo as UTC), e.g. 2025-01-01T09:00:00
+            time_until: New end time, same format as time_since
+            text: New description
+            customers_id: New customer ID
+            services_id: New service ID
+            projects_id: New project ID
+            billable: 0 = not billable, 1 = billable, 2 = already billed
         """
-        return user_tools.edit_my_entry(entry_id, data)
+        return user_tools.edit_my_entry(
+            entry_id,
+            time_since=time_since,
+            time_until=time_until,
+            text=text,
+            customers_id=customers_id,
+            services_id=services_id,
+            projects_id=projects_id,
+            billable=billable,
+        )
 
     @srv.tool(annotations=DESTRUCTIVE_IDEMPOTENT)
     def delete_my_time_entry(entry_id: int) -> dict:
@@ -442,6 +468,9 @@ def _register_user_edit_tools(srv: MCPServer) -> None:
     def delete_my_vacation(absence_id: int) -> dict:
         """
         Delete a vacation/absence for the authenticated user.
+
+        Approved absences are withdrawn (cancelled) first, because Clockodo
+        refuses to delete them directly.
 
         Args:
             absence_id: ID of the absence to delete
