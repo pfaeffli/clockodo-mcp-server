@@ -66,6 +66,7 @@ def register_team_leader_tools(mcp, service: TeamLeaderService):
         Approve a pending vacation/absence request.
 
         This changes the status from 0 (enquired) to 1 (approved).
+        Your own absence can't be approved by you (refused).
 
         Args:
             absence_id: ID of the absence to approve
@@ -81,6 +82,7 @@ def register_team_leader_tools(mcp, service: TeamLeaderService):
         Reject a pending vacation/absence request.
 
         This changes the status from 0 (enquired) to 2 (declined).
+        Your own absence can't be rejected by you (refused).
 
         Args:
             absence_id: ID of the absence to reject
@@ -99,7 +101,8 @@ def register_team_leader_tools(mcp, service: TeamLeaderService):
         """
         Adjust the dates of a vacation/absence request.
 
-        Useful for partial approvals or corrections.
+        Useful for partial approvals or corrections. Refused for your own
+        absence (use edit_my_vacation).
         Dates should be in YYYY-MM-DD format.
 
         Args:
@@ -120,21 +123,22 @@ def register_team_leader_tools(mcp, service: TeamLeaderService):
         date_since: str,
         date_until: str,
         absence_type: int = 1,
-        auto_approve: bool = True,
+        auto_approve: bool = False,
         sick_note: bool | None = None,
     ) -> dict:
         """
         Create a vacation entry for a team member.
 
         As a team leader, you can create vacation entries on behalf of team members.
-        By default, these are auto-approved (status=1).
+        By default, these stay pending (status=0). Auto-approving your own
+        absence is refused.
 
         Args:
             user_id: User ID of the team member
             date_since: Start date (YYYY-MM-DD)
             date_until: End date (YYYY-MM-DD)
             absence_type: Type of absence (1=Vacation, 2=Special leave, 3=Overtime reduction, 4=Sick day, etc.)
-            auto_approve: If True, approve immediately (default: True)
+            auto_approve: If True, approve immediately (default: False; refused for yourself)
             sick_note: Whether a sick note exists. Only relevant for types 4 and 5
                 (sick day, sick day of a child), where Clockodo requires it;
                 defaults to False for those types.
@@ -152,22 +156,46 @@ def register_team_leader_tools(mcp, service: TeamLeaderService):
         )
 
     @mcp.tool(annotations=_DESTRUCTIVE_IDEMPOTENT)
-    def edit_team_member_entry(entry_id: int, data: dict) -> dict:
+    def edit_team_member_entry(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        entry_id: int,
+        time_since: str | None = None,
+        time_until: str | None = None,
+        text: str | None = None,
+        customers_id: int | None = None,
+        services_id: int | None = None,
+        projects_id: int | None = None,
+        billable: int | None = None,
+    ) -> dict:
         """
-        Edit a time entry for a team member.
+        Edit a time entry for a team member. Only the fields you pass change.
 
-        As a team leader, you can modify time entries for your team members.
-        Common fields to update: time_since, time_until, text, billable, customers_id, services_id
+        The entry can't be moved to another user.
+
+        Pass at least one field.
 
         Args:
             entry_id: ID of the entry to edit
-            data: Dictionary with fields to update
-                  Example: {"time_since": "2024-01-15T09:00:00Z", "time_until": "2024-01-15T17:00:00Z"}
+            time_since: New start time: local Europe/Zurich time or any ISO 8601 with offset (sent to Clockodo as UTC), e.g. 2025-01-01T09:00:00
+            time_until: New end time, same format as time_since
+            text: New description
+            customers_id: New customer ID
+            services_id: New service ID
+            projects_id: New project ID
+            billable: 0 = not billable, 1 = billable, 2 = already billed
 
         Returns:
             Updated entry data
         """
-        return service.edit_team_entry(entry_id, data)
+        return service.edit_team_entry(
+            entry_id,
+            time_since=time_since,
+            time_until=time_until,
+            text=text,
+            customers_id=customers_id,
+            services_id=services_id,
+            projects_id=projects_id,
+            billable=billable,
+        )
 
     @mcp.tool(annotations=_DESTRUCTIVE_IDEMPOTENT)
     def delete_team_member_entry(entry_id: int) -> dict:

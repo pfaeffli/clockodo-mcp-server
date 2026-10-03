@@ -26,7 +26,7 @@ DEFAULT_BASE_URL = "https://my.clockodo.com/api/"
 
 
 @dataclass
-class ClockodoClient:
+class ClockodoClient:  # pylint: disable=too-many-public-methods
     """
     HTTP client for Clockodo REST API.
 
@@ -454,6 +454,10 @@ class ClockodoClient:
         if sick_note is not None:
             data["sick_note"] = sick_note
         return self._request("POST", "v4/absences", json_data=data)
+
+    def get_me(self) -> dict:
+        """Get the user the API credentials belong to."""
+        return self._request("GET", "v3/users/me")
 
     def get_absence(self, absence_id: int) -> dict:
         """Get a single absence (v4 API)."""

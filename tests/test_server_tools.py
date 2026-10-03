@@ -1,6 +1,9 @@
+import asyncio
 from unittest.mock import Mock, patch
 
 from clockodo_mcp import server as server_module
+from clockodo_mcp.config import ServerConfig
+from clockodo_mcp.server import build_server
 from clockodo_mcp.tools.debug_tools import get_raw_user_reports
 from clockodo_mcp.tools.hr_tools import (
     check_overtime_compliance,
@@ -337,7 +340,7 @@ def test_edit_my_entry_tool(mock_client_class):
     mock_client.get_entry.return_value = {"entry": {"id": 300, "users_id": 42}}
     mock_client.edit_entry.return_value = {"entry": {"id": 300, "text": "Updated"}}
 
-    result = edit_my_entry(entry_id=300, data={"text": "Updated"})
+    result = edit_my_entry(entry_id=300, text="Updated")
 
     mock_client.edit_entry.assert_called_once_with(300, {"text": "Updated"})
     assert result["entry"]["text"] == "Updated"
@@ -375,6 +378,44 @@ def test_delete_my_vacation_tool(mock_client_class):
 
     mock_client.delete_absence.assert_called_once_with(200)
     assert result["success"] is True
+
+
+@patch("clockodo_mcp.tools.user_tools.ClockodoClient")
+def test_delete_my_vacation_tool_cancels_approved_absence_first(mock_client_class):
+    mock_client = Mock()
+    mock_client_class.from_env.return_value = mock_client
+    mock_client.api_user = "me@example.com"
+    mock_client.list_users.return_value = {
+        "users": [{"id": 42, "email": "me@example.com"}]
+    }
+    mock_client.get_absence.return_value = {
+        "data": {"id": 200, "users_id": 42, "status": 1}
+    }
+
+    delete_my_vacation(absence_id=200)
+
+    mock_client.edit_absence.assert_called_once_with(200, {"status": 3})
+    mock_client.delete_absence.assert_called_once_with(200)
+
+
+def test_edit_and_delete_tool_schemas():
+    """edit_my_time_entry has typed params (no data dict, no users_id)."""
+    cfg = ServerConfig(user_read=True, user_edit=True, team_leader=True)
+    tools = {t.name: t for t in asyncio.run(build_server(cfg).list_tools())}
+
+    for name in ("edit_my_time_entry", "edit_team_member_entry"):
+        props = set(tools[name].input_schema["properties"])
+        assert props == {
+            "entry_id",
+            "time_since",
+            "time_until",
+            "text",
+            "customers_id",
+            "services_id",
+            "projects_id",
+            "billable",
+        }
+    assert "withdraw" in tools["delete_my_vacation"].description.lower()
 
 
 @patch("clockodo_mcp.tools.debug_tools.ClockodoClient")

@@ -71,7 +71,7 @@ def test_register_team_leader_tools():
         date_since="2024-02-01",
         date_until="2024-02-05",
         absence_type=1,
-        auto_approve=True,
+        auto_approve=False,
         sick_note=None,
     )
     assert result == {"id": 126}
@@ -79,9 +79,18 @@ def test_register_team_leader_tools():
     # Test edit_team_member_entry
     mock_service.edit_team_entry.return_value = {"id": 100}
     result = registered_tools["edit_team_member_entry"](
-        entry_id=100, data={"text": "updated"}
+        entry_id=100, text="updated", billable=0
     )
-    mock_service.edit_team_entry.assert_called_once_with(100, {"text": "updated"})
+    mock_service.edit_team_entry.assert_called_once_with(
+        100,
+        time_since=None,
+        time_until=None,
+        text="updated",
+        customers_id=None,
+        services_id=None,
+        projects_id=None,
+        billable=0,
+    )
     assert result == {"id": 100}
 
     # Test delete_team_member_entry

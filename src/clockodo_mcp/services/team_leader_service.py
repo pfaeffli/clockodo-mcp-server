@@ -14,6 +14,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable
 
+from .entry_changes import build_entry_changes
+
 if TYPE_CHECKING:
     from ..client import ClockodoClient
 
@@ -37,6 +39,7 @@ class TeamLeaderService:
         """
         self._client_factory = client_factory
         self._client: ClockodoClient | None = None
+        self._me: int | None = None
 
     @property
     def client(self) -> ClockodoClient:
@@ -44,6 +47,20 @@ class TeamLeaderService:
         if self._client is None:
             self._client = self._client_factory()
         return self._client
+
+    def _current_user_id(self) -> int:
+        """ID of the user the credentials belong to (cached)."""
+        if self._me is None:
+            self._me = self.client.get_me()["data"]["id"]
+        return self._me
+
+    def _refuse_own_absence(self, absence_id: int, action: str, hint: str = "") -> None:
+        """Raise PermissionError if the absence belongs to the current user."""
+        absence = self.client.get_absence(absence_id).get("data") or {}
+        if absence.get("users_id") == self._current_user_id():
+            raise PermissionError(
+                f"You can't {action} your own absence {absence_id}{hint}"
+            )
 
     def approve_vacation(self, absence_id: int) -> dict:
         """
@@ -57,6 +74,7 @@ class TeamLeaderService:
         Returns:
             Updated absence data from API
         """
+        self._refuse_own_absence(absence_id, "approve")
         return self.client.edit_absence(absence_id, {"status": 1})
 
     def reject_vacation(self, absence_id: int) -> dict:
@@ -71,6 +89,7 @@ class TeamLeaderService:
         Returns:
             Updated absence data from API
         """
+        self._refuse_own_absence(absence_id, "reject")
         return self.client.edit_absence(absence_id, {"status": 2})
 
     def list_pending_vacations(self, year: int) -> list[dict]:
@@ -88,20 +107,36 @@ class TeamLeaderService:
         # Status 0 = enquired (pending approval)
         return [a for a in absences if a.get("status") == 0]
 
-    def edit_team_entry(self, entry_id: int, data: dict) -> dict:
+    def edit_team_entry(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        self,
+        entry_id: int,
+        time_since: str | None = None,
+        time_until: str | None = None,
+        text: str | None = None,
+        customers_id: int | None = None,
+        services_id: int | None = None,
+        projects_id: int | None = None,
+        billable: int | None = None,
+    ) -> dict:
         """
         Edit a team member's time entry.
 
-        As a team leader, you can modify entries for your team members.
-
-        Args:
-            entry_id: ID of the entry to edit
-            data: Dictionary with fields to update (e.g., time_since, time_until, text)
+        Only the params that are passed change; users_id is not editable, so
+        the entry can't be moved to another user.
 
         Returns:
             Updated entry data from API
         """
-        return self.client.edit_entry(entry_id, data)
+        changes = build_entry_changes(
+            time_since=time_since,
+            time_until=time_until,
+            text=text,
+            customers_id=customers_id,
+            services_id=services_id,
+            projects_id=projects_id,
+            billable=billable,
+        )
+        return self.client.edit_entry(entry_id, changes)
 
     def delete_team_entry(self, entry_id: int) -> dict:
         """
@@ -134,6 +169,9 @@ class TeamLeaderService:
         Returns:
             Updated absence data from API
         """
+        self._refuse_own_absence(
+            absence_id, "adjust", " (use edit_my_vacation instead)"
+        )
         return self.client.edit_absence(
             absence_id,
             {
@@ -159,13 +197,16 @@ class TeamLeaderService:
             date_since: Start date (YYYY-MM-DD)
             date_until: End date (YYYY-MM-DD)
             absence_type: Type of absence (1: Vacation, 2: Special leave, 4: Sick day, etc.)
-            auto_approve: If True, set status to 1 (approved) immediately
+            auto_approve: If True, set status to 1 (approved) immediately;
+                refused when user_id is the current user
             sick_note: Sick note flag; Clockodo requires it for types 4 and 5,
                 so it defaults to False there
 
         Returns:
             Created absence data from API
         """
+        if auto_approve and user_id == self._current_user_id():
+            raise PermissionError("You can't auto-approve your own absence")
         if sick_note is None and absence_type in (4, 5):
             sick_note = False
         status = 1 if auto_approve else 0  # 0=enquired, 1=approved
