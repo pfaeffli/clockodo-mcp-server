@@ -483,6 +483,26 @@ def test_edit_my_entry_rejects_other_users_entry():
     client.edit_entry.assert_not_called()
 
 
+def test_edit_my_entry_rejects_reassigning_to_other_user():
+    """Editing your own entry must not hand it to another user."""
+    client = _own_entry_client()
+
+    service = UserService(client)
+    with pytest.raises(PermissionError, match="another user"):
+        service.edit_my_entry(entry_id=3001, data={"users_id": 99})
+
+    client.edit_entry.assert_not_called()
+
+
+def test_edit_my_entry_allows_own_users_id():
+    client = _own_entry_client()
+
+    service = UserService(client)
+    service.edit_my_entry(entry_id=3001, data={"users_id": 42, "text": "x"})
+
+    client.edit_entry.assert_called_once_with(3001, {"users_id": 42, "text": "x"})
+
+
 def test_delete_my_entry():
     """Test deleting an entry."""
     client = _own_entry_client()
