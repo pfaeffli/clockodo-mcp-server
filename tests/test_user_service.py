@@ -249,6 +249,18 @@ def test_edit_my_vacation_half_day_rejects_multiple_days():
     client.edit_absence.assert_not_called()
 
 
+def test_edit_my_vacation_keeps_stored_half_day_single_day():
+    """Extending a stored half-day absence over several days is refused."""
+    client = _own_absence_client(date_since="2026-10-05", date_until="2026-10-05")
+    client.get_absence.return_value["data"]["half_day"] = True
+
+    service = UserService(client)
+    with pytest.raises(ValueError, match="single day"):
+        service.edit_my_vacation(2001, date_until="2026-10-07")
+
+    client.edit_absence.assert_not_called()
+
+
 def test_edit_my_vacation_half_day_with_new_single_date():
     """New dates are checked, not the stored ones."""
     client = _own_absence_client(date_since="2026-09-28", date_until="2026-10-01")
