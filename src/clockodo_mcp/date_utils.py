@@ -2,8 +2,14 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+import os
+import re
+from datetime import datetime, timezone
 from typing import overload
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+DEFAULT_TIMEZONE = "Europe/Zurich"
+_DATE_ONLY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
 @overload
@@ -16,37 +22,48 @@ def normalize_datetime(value: None) -> None: ...
 
 def normalize_datetime(value: str | None) -> str | None:
     """
-    Normalize a datetime string to ISO 8601 format for the Clockodo API.
+    Normalize a datetime string to the UTC format the Clockodo API requires.
 
-    Handles common LLM-generated formats:
-    - "2025-01-01 09:00:00" → "2025-01-01T09:00:00Z"
-    - "2025-01-01T09:00:00" → "2025-01-01T09:00:00Z"
-    - "2025-01-01T09:00:00Z" → "2025-01-01T09:00:00Z" (passthrough)
-    - "2025-01-01T09:00:00+01:00" → "2025-01-01T09:00:00+01:00" (passthrough)
+    Clockodo v2 accepts only ``YYYY-MM-DDTHH:MM:SSZ``. Input handling:
+    - Naive times ("2025-01-01 09:00", "2025-01-01T09:00:00") are interpreted
+      in the zone from ``CLOCKODO_TIMEZONE`` (default ``Europe/Zurich``).
+    - Aware times ("...Z", "...+02:00", "...-05:00") are converted to UTC.
+    - Date-only input is refused: a time is required.
 
     Args:
         value: Datetime string or None.
 
     Returns:
-        Normalized ISO 8601 string, or None if input is None.
+        UTC string like "2025-01-01T08:00:00Z", or None if input is None.
 
     Raises:
-        ValueError: If the string cannot be parsed as a valid datetime.
+        ValueError: If the string is not a valid datetime or has no time part.
     """
     if value is None:
         return None
 
-    # Replace space separator with T
-    normalized = value.replace(" ", "T", 1)
-
-    # Validate by parsing
+    text = value.strip()
     try:
-        datetime.fromisoformat(normalized.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(text)
     except (ValueError, TypeError) as exc:
         raise ValueError(f"Invalid datetime format: {value!r}") from exc
 
-    # Append Z if no timezone info present
-    if "+" not in normalized and not normalized.endswith("Z"):
-        normalized += "Z"
+    if _DATE_ONLY.match(text):
+        raise ValueError(
+            f"A time is required, got date only: {value!r} "
+            "(use e.g. 2025-01-01T09:00:00)"
+        )
 
-    return normalized
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=get_local_timezone())
+
+    return parsed.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def get_local_timezone() -> ZoneInfo:
+    """Return the zone for naive times (``CLOCKODO_TIMEZONE``, default Zurich)."""
+    name = os.getenv("CLOCKODO_TIMEZONE") or DEFAULT_TIMEZONE
+    try:
+        return ZoneInfo(name)
+    except (ZoneInfoNotFoundError, ValueError) as exc:
+        raise ValueError(f"Unknown timezone in CLOCKODO_TIMEZONE: {name!r}") from exc

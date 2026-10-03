@@ -6,9 +6,10 @@ Provides resources that allow users to attach and manage context data.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from .client import ClockodoClient
+from .services.user_service import UserService
 
 
 def get_current_time_entry_resource() -> dict:
@@ -21,7 +22,7 @@ def get_current_time_entry_resource() -> dict:
     client = ClockodoClient.from_env()
     clock = client.get_clock()
 
-    if not clock or "running" not in clock:
+    if not clock or not clock.get("running"):
         return {
             "uri": "clockodo://current-entry",
             "name": "Current Time Entry",
@@ -150,13 +151,16 @@ def get_recent_entries_resource(days: int = 7) -> dict:
         Dictionary with recent entries data
     """
     client = ClockodoClient.from_env()
-    end_date = datetime.now()
+    end_date = datetime.now(timezone.utc)
     start_date = end_date - timedelta(days=days)
 
-    time_since = start_date.strftime("%Y-%m-%d 00:00:00")
-    time_until = end_date.strftime("%Y-%m-%d 23:59:59")
+    time_since = start_date.strftime("%Y-%m-%dT00:00:00Z")
+    time_until = end_date.strftime("%Y-%m-%dT23:59:59Z")
 
-    entries = client.list_entries(time_since=time_since, time_until=time_until)
+    user_id = UserService(client).get_current_user_id()
+    entries = client.list_entries(
+        time_since=time_since, time_until=time_until, user_id=user_id
+    )
     entry_list = entries.get("entries", [])
 
     return {

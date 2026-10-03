@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Time zones** (#52): naive times are now interpreted as `Europe/Zurich` (configurable via `CLOCKODO_TIMEZONE`) and every time is sent to Clockodo as UTC `...Z`; offsets like `+02:00`/`-05:00` are converted instead of being passed through or rejected; date-only input is refused. `clockodo://recent-entries` no longer sends a rejected space-separated format and only lists the current user's entries; `clockodo://current-entry` no longer crashes when no clock runs.
 - **Entry reassignment**: `edit_my_time_entry` refused other users' entries but still let `data={"users_id": …}` move your own entry to someone else. Changing `users_id` to another user is now refused.
 
 ## [0.7.0] - 2026-10-03
