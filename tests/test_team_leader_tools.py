@@ -10,7 +10,7 @@ def test_register_team_leader_tools():
     # Track registered tools
     registered_tools = {}
 
-    def tool_decorator():
+    def tool_decorator(**_kwargs):
         def wrapper(func):
             registered_tools[func.__name__] = func
             return func

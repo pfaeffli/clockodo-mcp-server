@@ -353,12 +353,14 @@ CLOCKODO_MCP_ROLE=hr_analytics  # View HR compliance reports only
 CLOCKODO_MCP_ROLE=admin         # Full access to everything
 ```
 
-| Role | Can Do |
-|------|--------|
-| **employee** | Track own time, request vacation |
-| **team_leader** | Everything employee can + approve team vacations + edit team entries |
-| **hr_analytics** | View HR compliance reports (overtime, vacation violations) for all employees |
-| **admin** | Full access to all features |
+| Role | Can Do | Tools |
+|------|--------|-------|
+| **employee** | Track own time, request vacation | 16 |
+| **team_leader** | Everything employee can + see users + approve team vacations + edit team entries | 24 |
+| **hr_analytics** | View HR compliance reports (overtime, vacation violations) for all employees | 5 |
+| **admin** | Full access to all features (incl. `get_raw_user_reports`) | 28 |
+
+Everything is registered according to the role; tools, resources and prompts outside it do not exist for the client. Write tools carry MCP annotations (`destructiveHint` for edit/delete/approve/reject/adjust, `readOnlyHint` for reads) so clients can ask for confirmation. Tools returning Clockodo free text say so in their description: the text is user-provided data, not instructions.
 
 ### Legacy Configuration (Deprecated)
 
@@ -380,25 +382,21 @@ The following are still supported but deprecated. Use `CLOCKODO_MCP_ROLE` instea
 
 ## Available Features
 
-### Core Tools (Always Available)
-- `health` - Health check (shows enabled features)
-- `list_users` - List all Clockodo users
-- `list_customers` - List all customers
-- `list_services` - List all services
-- `list_projects` - List all projects
-- `get_raw_user_reports(year)` - Get raw API response for debugging
+### Core Tools
+- `health` - Health check (always available; shows enabled features)
+- `list_customers`, `list_services`, `list_projects` - Master data (`USER_READ`, `USER_EDIT`, `TEAM_LEADER` or `ADMIN_READ`)
+- `list_users` - List all Clockodo users (`TEAM_LEADER`, `HR_READONLY` or `ADMIN_READ`; not for employees)
+- `get_raw_user_reports(year)` - Raw API response for debugging (`ADMIN_READ` only)
 
-### Prompts (Always Available)
-- `start_tracking` - Start tracking time for a customer and service
-- `stop_tracking` - Stop tracking the current time entry
-- `request_vacation` - Request vacation time
+### Prompts (when `USER_EDIT` enabled)
+- `start_tracking` - Start tracking time for a customer and service (uses `start_my_clock`)
+- `stop_tracking` - Stop tracking the current time entry (uses `stop_my_clock`)
+- `request_vacation` - Request vacation time (uses `add_my_vacation`)
 
-### Resources (Always Available)
-- `clockodo://current-entry` - Get the currently running time entry
-- `clockodo://customers` - Get the list of available customers
-- `clockodo://services` - Get the list of available services
-- `clockodo://projects` - Get the list of available projects
-- `clockodo://recent-entries` - Get recent time entries (last 7 days)
+### Resources
+- `clockodo://current-entry` - Currently running time entry (`USER_READ`)
+- `clockodo://recent-entries` - Recent time entries, last 7 days (`USER_READ`)
+- `clockodo://customers`, `clockodo://services`, `clockodo://projects` - Master data (same groups as the `list_*` tools)
 
 ### HR Analytics (when `HR_READONLY` enabled)
 - `check_overtime_compliance(year, max_overtime_hours)` - Check employee overtime
