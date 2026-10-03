@@ -6,23 +6,13 @@ on:
 
 jobs:
   test:
+    # Name kept stable ("test (3.12)") in case it is used as a required check.
+    # The make targets run in Docker, so no host Python setup is needed.
+    name: test (3.12)
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.12"]
 
     steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -e ".[dev]"
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
     - name: Check formatting
       run: make format-check
@@ -30,5 +20,8 @@ jobs:
     - name: Lint
       run: make lint
 
-    - name: Run tests
+    - name: Type check
+      run: make type
+
+    - name: Run tests (with coverage threshold)
       run: make test
