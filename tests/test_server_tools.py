@@ -392,10 +392,7 @@ def test_delete_my_vacation_tool(mock_client_class):
 def test_delete_my_vacation_tool_cancels_approved_absence_first(mock_client_class):
     mock_client = Mock()
     mock_client_class.from_env.return_value = mock_client
-    mock_client.api_user = "me@example.com"
-    mock_client.list_users.return_value = {
-        "users": [{"id": 42, "email": "me@example.com"}]
-    }
+    mock_client.get_me.return_value = {"data": {"id": 42}}
     mock_client.get_absence.return_value = {
         "data": {"id": 200, "users_id": 42, "status": 1}
     }

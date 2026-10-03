@@ -33,7 +33,7 @@ ME = 7
 
 
 def _mock_me_and_absence(client, absence_id, owner):
-    respx.get(f"{client.base_url}v3/users/me").mock(
+    respx.get(f"{client.base_url}v4/users/me").mock(
         return_value=Response(200, json={"data": {"id": ME}})
     )
     respx.get(f"{client.base_url}v4/absences/{absence_id}").mock(
@@ -205,7 +205,7 @@ def test_create_team_vacation_auto_approve(service, client):
         }
     }
 
-    respx.get(f"{client.base_url}v3/users/me").mock(
+    respx.get(f"{client.base_url}v4/users/me").mock(
         return_value=Response(200, json={"data": {"id": ME}})
     )
     respx.post(f"{client.base_url}v4/absences").mock(
@@ -356,7 +356,7 @@ def test_adjust_vacation_length_refuses_own_absence(service, client):
 
 @respx.mock
 def test_current_user_id_is_cached(service, client):
-    me = respx.get(f"{client.base_url}v3/users/me").mock(
+    me = respx.get(f"{client.base_url}v4/users/me").mock(
         return_value=Response(200, json={"data": {"id": ME}})
     )
     respx.get(f"{client.base_url}v4/absences/123").mock(
@@ -387,7 +387,7 @@ def test_create_team_vacation_defaults_to_not_approved(service, client):
 
 @respx.mock
 def test_create_team_vacation_refuses_self_approval(service, client):
-    respx.get(f"{client.base_url}v3/users/me").mock(
+    respx.get(f"{client.base_url}v4/users/me").mock(
         return_value=Response(200, json={"data": {"id": ME}})
     )
     route = respx.post(f"{client.base_url}v4/absences")
@@ -405,7 +405,7 @@ def test_create_team_vacation_refuses_self_approval(service, client):
 
 @respx.mock
 def test_create_team_vacation_for_self_without_auto_approve(service, client):
-    respx.get(f"{client.base_url}v3/users/me").mock(
+    respx.get(f"{client.base_url}v4/users/me").mock(
         return_value=Response(200, json={"data": {"id": ME}})
     )
     route = respx.post(f"{client.base_url}v4/absences").mock(

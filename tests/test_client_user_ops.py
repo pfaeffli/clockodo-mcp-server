@@ -166,7 +166,7 @@ def test_get_entry():
 def test_get_me():
     client = ClockodoClient(api_user="u@example.com", api_key="k")
 
-    route = respx.get(f"{DEFAULT_BASE_URL}v3/users/me").mock(
+    route = respx.get(f"{DEFAULT_BASE_URL}v4/users/me").mock(
         return_value=httpx.Response(200, json={"data": {"id": 42}})
     )
 
