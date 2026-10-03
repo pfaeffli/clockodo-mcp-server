@@ -376,6 +376,10 @@ class ClockodoClient:
             data["users_id"] = user_id
         return self._request("POST", "v2/entries", json_data=data)
 
+    def get_entry(self, entry_id: int) -> dict:
+        """Get a single entry (v2 API)."""
+        return self._request("GET", f"v2/entries/{entry_id}")
+
     def edit_entry(self, entry_id: int, data: dict) -> dict:
         """Edit an existing time entry."""
         return self._request("PUT", f"v2/entries/{entry_id}", json_data=data)

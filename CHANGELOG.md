@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Own-record checks** (#43): `cancel_my_vacation`, `delete_my_vacation`, `edit_my_entry` and `delete_my_entry` now refuse absences and entries that belong to other users, even with a team-leader API key, like `edit_my_vacation` already did.
+
 ## [0.6.0] - 2026-10-03
 
 ### Added
