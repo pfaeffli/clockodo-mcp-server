@@ -102,6 +102,7 @@ def register_team_leader_tools(mcp, service: TeamLeaderService):
         date_until: str,
         absence_type: int = 1,
         auto_approve: bool = True,
+        sick_note: bool | None = None,
     ) -> dict:
         """
         Create a vacation entry for a team member.
@@ -115,6 +116,9 @@ def register_team_leader_tools(mcp, service: TeamLeaderService):
             date_until: End date (YYYY-MM-DD)
             absence_type: Type of absence (1=Vacation, 2=Special leave, 3=Overtime reduction, 4=Sick day, etc.)
             auto_approve: If True, approve immediately (default: True)
+            sick_note: Whether a sick note exists. Only relevant for types 4 and 5
+                (sick day, sick day of a child), where Clockodo requires it;
+                defaults to False for those types.
 
         Returns:
             Created absence data
@@ -125,6 +129,7 @@ def register_team_leader_tools(mcp, service: TeamLeaderService):
             date_until=date_until,
             absence_type=absence_type,
             auto_approve=auto_approve,
+            sick_note=sick_note,
         )
 
     @mcp.tool()

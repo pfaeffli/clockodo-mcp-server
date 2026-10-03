@@ -105,6 +105,28 @@ class UserService:
             half_day=half_day,
         )
 
+    def add_my_sick_day(
+        self,
+        date_since: str,
+        date_until: str,
+        sick_note: bool = False,
+        child: bool = False,
+    ) -> dict:
+        """
+        Add a sick day entry for the current user.
+
+        Absence type 4 is 'Sick day', type 5 is 'Sick day of a child'. Clockodo
+        requires the sick_note flag for both, so it is always sent.
+        """
+        user_id = self.get_current_user_id()
+        return self.client.create_absence(
+            date_since=date_since,
+            date_until=date_until,
+            absence_type=5 if child else 4,
+            user_id=user_id,
+            sick_note=sick_note,
+        )
+
     def edit_my_vacation(
         self,
         absence_id: int,

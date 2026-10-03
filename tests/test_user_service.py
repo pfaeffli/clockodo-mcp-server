@@ -512,3 +512,35 @@ def test_get_my_absences_handles_missing_absences_key():
     result = service.get_my_absences(year=2025)
 
     assert result["absences"] == []
+
+
+def test_add_my_sick_day():
+    client = _absence_client()
+
+    UserService(client).add_my_sick_day(
+        date_since="2026-10-01", date_until="2026-10-02"
+    )
+
+    client.create_absence.assert_called_once_with(
+        date_since="2026-10-01",
+        date_until="2026-10-02",
+        absence_type=4,
+        user_id=42,
+        sick_note=False,
+    )
+
+
+def test_add_my_sick_day_child_with_note():
+    client = _absence_client()
+
+    UserService(client).add_my_sick_day(
+        date_since="2026-10-01", date_until="2026-10-01", sick_note=True, child=True
+    )
+
+    client.create_absence.assert_called_once_with(
+        date_since="2026-10-01",
+        date_until="2026-10-01",
+        absence_type=5,
+        user_id=42,
+        sick_note=True,
+    )

@@ -316,6 +316,25 @@ def _register_user_edit_tools():
         return user_tools.add_my_vacation(date_since, date_until, half_day)
 
     @mcp.tool()
+    def add_my_sick_day(
+        date_since: str,
+        date_until: str,
+        sick_note: bool = False,
+        child: bool = False,
+    ) -> dict:
+        """
+        Report a sick day (or a range of sick days) for the authenticated user.
+
+        Args:
+            date_since: Start date (YYYY-MM-DD)
+            date_until: End date (YYYY-MM-DD)
+            sick_note: True if a sick note (doctor's certificate) exists
+            child: True to book a sick day of a child (absence type 5)
+                instead of your own sickness (type 4)
+        """
+        return user_tools.add_my_sick_day(date_since, date_until, sick_note, child)
+
+    @mcp.tool()
     def edit_my_vacation(
         absence_id: int,
         date_since: str | None = None,
@@ -482,7 +501,12 @@ def create_server(client=None, test_config: ServerConfig | None = None):
                 self.tool_names.extend(["get_my_time_entries", "get_my_absences"])
             if test_conf.user_edit:
                 self.tool_names.extend(
-                    ["add_my_time_entry", "delete_my_vacation", "edit_my_vacation"]
+                    [
+                        "add_my_time_entry",
+                        "add_my_sick_day",
+                        "delete_my_vacation",
+                        "edit_my_vacation",
+                    ]
                 )
             if test_conf.team_leader:
                 self.tool_names.extend(
