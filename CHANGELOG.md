@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Sick days** (#30): New `add_my_sick_day(date_since, date_until, sick_note=False, child=False)` tool (absence type 4, or 5 for a sick day of a child). `create_team_member_vacation` accepts `sick_note` and sends `False` for types 4 and 5 when omitted, as Clockodo requires the field there.
+
 ### Fixed
+- **API error details** (#30): Clockodo's JSON error body is now included in the raised error message (`... - Details: ...`); previously it was swallowed and only the bare HTTP error was shown.
 - **Own-record checks** (#43): `cancel_my_vacation`, `delete_my_vacation`, `edit_my_entry` and `delete_my_entry` now refuse absences and entries that belong to other users, even with a team-leader API key, like `edit_my_vacation` already did.
 
 ## [0.6.0] - 2026-10-03

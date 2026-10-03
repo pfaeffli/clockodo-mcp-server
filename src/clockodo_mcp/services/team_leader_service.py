@@ -149,6 +149,7 @@ class TeamLeaderService:
         date_until: str,
         absence_type: int = 1,
         auto_approve: bool = False,
+        sick_note: bool | None = None,
     ) -> dict:
         """
         Create a vacation entry for a team member.
@@ -159,10 +160,14 @@ class TeamLeaderService:
             date_until: End date (YYYY-MM-DD)
             absence_type: Type of absence (1: Vacation, 2: Special leave, 4: Sick day, etc.)
             auto_approve: If True, set status to 1 (approved) immediately
+            sick_note: Sick note flag; Clockodo requires it for types 4 and 5,
+                so it defaults to False there
 
         Returns:
             Created absence data from API
         """
+        if sick_note is None and absence_type in (4, 5):
+            sick_note = False
         status = 1 if auto_approve else 0  # 0=enquired, 1=approved
         return self.client.create_absence(
             date_since=date_since,
@@ -170,4 +175,5 @@ class TeamLeaderService:
             absence_type=absence_type,
             user_id=user_id,
             status=status,
+            sick_note=sick_note,
         )

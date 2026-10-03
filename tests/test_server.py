@@ -125,6 +125,7 @@ def test_server_user_edit_only():
     assert "add_my_time_entry" in server.tool_names
     assert "delete_my_vacation" in server.tool_names
     assert "edit_my_vacation" in server.tool_names
+    assert "add_my_sick_day" in server.tool_names
 
     # User read tools absent (when edit is enabled but read is not)
     assert "get_my_time_entries" not in server.tool_names

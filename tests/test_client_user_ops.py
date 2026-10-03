@@ -1,6 +1,7 @@
 import json
 
 import httpx
+import pytest
 import respx
 
 from clockodo_mcp.client import DEFAULT_BASE_URL, ClockodoClient
@@ -406,3 +407,66 @@ def test_list_entries_without_user_filter():
     # Verify no filter[users_id] parameter when user_id is None
     assert route.calls[0].request.url.params.get("filter[users_id]") is None
     assert len(data["entries"]) == 2
+
+
+@respx.mock
+def test_create_absence_sick_note():
+    client = ClockodoClient(api_user="u@example.com", api_key="k")
+    route = respx.post(f"{DEFAULT_BASE_URL}v4/absences").mock(
+        return_value=httpx.Response(201, json={"data": {"id": 1}})
+    )
+
+    client.create_absence(
+        date_since="2026-10-01",
+        date_until="2026-10-01",
+        absence_type=4,
+        sick_note=False,
+    )
+
+    assert json.loads(route.calls[0].request.content)["sick_note"] is False
+
+
+@respx.mock
+def test_create_absence_omits_sick_note_by_default():
+    client = ClockodoClient(api_user="u@example.com", api_key="k")
+    route = respx.post(f"{DEFAULT_BASE_URL}v4/absences").mock(
+        return_value=httpx.Response(201, json={"data": {"id": 1}})
+    )
+
+    client.create_absence(
+        date_since="2026-10-01", date_until="2026-10-01", absence_type=1
+    )
+
+    assert "sick_note" not in json.loads(route.calls[0].request.content)
+
+
+@respx.mock
+def test_request_error_includes_json_body():
+    client = ClockodoClient(api_user="u@example.com", api_key="k")
+    body = {
+        "errors": [
+            {"message": "Value is required and cannot be empty.", "path": "sick_note"}
+        ]
+    }
+    respx.post(f"{DEFAULT_BASE_URL}v4/absences").mock(
+        return_value=httpx.Response(422, json=body)
+    )
+
+    with pytest.raises(httpx.HTTPStatusError, match="sick_note"):
+        client.create_absence(
+            date_since="2026-10-01", date_until="2026-10-01", absence_type=4
+        )
+
+
+@respx.mock
+def test_request_error_non_json_body_falls_back():
+    client = ClockodoClient(api_user="u@example.com", api_key="k")
+    respx.post(f"{DEFAULT_BASE_URL}v4/absences").mock(
+        return_value=httpx.Response(500, text="boom")
+    )
+
+    with pytest.raises(httpx.HTTPStatusError) as exc:
+        client.create_absence(
+            date_since="2026-10-01", date_until="2026-10-01", absence_type=1
+        )
+    assert "Details" not in str(exc.value)

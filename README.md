@@ -401,6 +401,7 @@ The following are still supported but deprecated. Use `CLOCKODO_MCP_ROLE` instea
 - `edit_my_time_entry(entry_id, data)` - Edit your time entry
 - `delete_my_time_entry(entry_id)` - Delete your time entry
 - `add_my_vacation(date_since, date_until, half_day=False)` - Request vacation; `half_day=True` books a half day (single day only)
+- `add_my_sick_day(date_since, date_until, sick_note=False, child=False)` - Report a sick day; `child=True` books a sick day of a child
 - `edit_my_vacation(absence_id, date_since=None, date_until=None, half_day=None)` - Change the dates or half-day flag of your absence
 - `delete_my_vacation(absence_id)` - Delete vacation request
 

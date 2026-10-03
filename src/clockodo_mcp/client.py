@@ -150,15 +150,15 @@ class ClockodoClient:
             # Include response body in the error message for better debugging
             try:
                 error_detail = resp.json()
-                logger.error("API Error: %s - %s", e, error_detail)
-                # Re-raise with detail in message
-                raise httpx.HTTPStatusError(
-                    f"{e} - Details: {error_detail}",
-                    request=e.request,
-                    response=e.response,
-                ) from e
-            except Exception as parse_error:
-                raise e from parse_error
+            except ValueError:
+                raise e from None
+            logger.error("API Error: %s - %s", e, error_detail)
+            # Re-raise with detail in message
+            raise httpx.HTTPStatusError(
+                f"{e} - Details: {error_detail}",
+                request=e.request,
+                response=e.response,
+            ) from e
         return resp.json()
 
     # ==============================================
@@ -425,6 +425,7 @@ class ClockodoClient:
         user_id: int | None = None,
         status: int | None = None,
         half_day: bool = False,
+        sick_note: bool | None = None,
     ) -> dict:
         """
         Create a new absence (vacation, etc.).
@@ -436,6 +437,8 @@ class ClockodoClient:
             user_id: Optional user ID (if admin)
             status: Optional status (0: Enquired, 1: Approved, 2: Declined)
             half_day: Book a half day (Clockodo allows this for a single day only)
+            sick_note: Whether a sick note exists (required by Clockodo for
+                types 4 and 5, sick day and sick day of a child)
         """
         data = {
             "date_since": date_since,
@@ -448,6 +451,8 @@ class ClockodoClient:
             data["status"] = status
         if half_day:
             data["half_day"] = True
+        if sick_note is not None:
+            data["sick_note"] = sick_note
         return self._request("POST", "v4/absences", json_data=data)
 
     def get_absence(self, absence_id: int) -> dict:

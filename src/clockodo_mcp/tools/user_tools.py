@@ -62,6 +62,26 @@ def add_my_vacation(date_since: str, date_until: str, half_day: bool = False) ->
     return service.add_my_vacation(date_since, date_until, half_day)
 
 
+def add_my_sick_day(
+    date_since: str,
+    date_until: str,
+    sick_note: bool = False,
+    child: bool = False,
+) -> dict:
+    """
+    Add a sick day for the authenticated user.
+
+    Args:
+        date_since: Start date (YYYY-MM-DD)
+        date_until: End date (YYYY-MM-DD)
+        sick_note: Whether a sick note (doctor's certificate) exists
+        child: Book a sick day of a child (type 5) instead of own sickness (type 4)
+    """
+    client = ClockodoClient.from_env()
+    service = UserService(client)
+    return service.add_my_sick_day(date_since, date_until, sick_note, child)
+
+
 def edit_my_vacation(
     absence_id: int,
     date_since: str | None = None,

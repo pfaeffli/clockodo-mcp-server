@@ -72,6 +72,7 @@ def test_register_team_leader_tools():
         date_until="2024-02-05",
         absence_type=1,
         auto_approve=True,
+        sick_note=None,
     )
     assert result == {"id": 126}
 
