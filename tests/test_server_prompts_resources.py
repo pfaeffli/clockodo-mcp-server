@@ -41,6 +41,14 @@ def test_request_vacation_prompt():
     assert "vacation" in result.lower()
 
 
+@pytest.fixture(autouse=True)
+def mock_user_service():
+    """Resolve the current user without touching the API."""
+    with patch("clockodo_mcp.resources.UserService") as service:
+        service.return_value.get_current_user_id.return_value = 42
+        yield service
+
+
 @pytest.fixture
 def mock_client():
     """Create a mock ClockodoClient."""
