@@ -4,11 +4,20 @@ Tests for resources.py module.
 
 # pylint: disable=redefined-outer-name  # pytest fixtures
 
+import re
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from clockodo_mcp import resources
+
+
+@pytest.fixture(autouse=True)
+def mock_user_service():
+    """Resolve the current user without touching the API."""
+    with patch("clockodo_mcp.resources.UserService") as service:
+        service.return_value.get_current_user_id.return_value = 42
+        yield service
 
 
 @pytest.fixture
@@ -31,6 +40,19 @@ def test_get_current_time_entry_resource_no_running_clock(mock_client):
     assert result["name"] == "Current Time Entry"
     assert "No time entry" in result["description"]
     assert result["mimeType"] == "application/json"
+    assert result["content"]["running"] is False
+
+
+def test_get_current_time_entry_resource_idle_real_api_shape(mock_client):
+    """The real API returns {"running": null} when no clock runs."""
+    mock_client.get_clock.return_value = {"running": None}
+
+    with patch(
+        "clockodo_mcp.resources.ClockodoClient.from_env", return_value=mock_client
+    ):
+        result = resources.get_current_time_entry_resource()
+
+    assert "No time entry" in result["description"]
     assert result["content"]["running"] is False
 
 
@@ -247,3 +269,21 @@ def test_get_recent_entries_resource_empty(mock_client):
 
     assert result["content"]["count"] == 0
     assert result["content"]["entries"] == []
+
+
+def test_recent_entries_uses_utc_z_window_and_user_filter(mock_client):
+    """Window must be UTC Z format (no spaces) and filtered to the current user."""
+    mock_client.list_entries.return_value = {"entries": []}
+
+    with patch(
+        "clockodo_mcp.resources.ClockodoClient.from_env", return_value=mock_client
+    ):
+        result = resources.get_recent_entries_resource(days=7)
+
+    kwargs = mock_client.list_entries.call_args[1]
+    pattern = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$"
+    assert re.match(pattern, kwargs["time_since"])
+    assert re.match(pattern, kwargs["time_until"])
+    assert kwargs["time_since"] < kwargs["time_until"]
+    assert kwargs["user_id"] == 42
+    assert result["content"]["period"]["start"] == kwargs["time_since"]

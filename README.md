@@ -326,6 +326,9 @@ anything beyond the local machine and add its hostname to
 - `CLOCKODO_BASE_URL` - API base URL (default: "https://my.clockodo.com/api/")
 - `CLOCKODO_EXTERNAL_APP_CONTACT` - Contact info for external app header (default: API user email)
 
+### Time Zone (Optional)
+- `CLOCKODO_TIMEZONE` - IANA zone used for times without an offset (default: "Europe/Zurich"); all times are sent to Clockodo as UTC
+
 ### Transport Configuration (Optional)
 - `CLOCKODO_MCP_TRANSPORT` - Transport protocol (default: "stdio")
   - `stdio` - Standard input/output for local processes (Claude Desktop, IDEs) **[Recommended]**
