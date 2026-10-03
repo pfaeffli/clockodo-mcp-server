@@ -41,27 +41,6 @@ def get_current_time_entry_resource() -> dict:
     }
 
 
-def get_user_profile_resource() -> dict:
-    """
-    Get the authenticated user's profile as a resource.
-
-    Returns:
-        Dictionary with user profile data
-    """
-    client = ClockodoClient.from_env()
-    users = client.list_users()
-
-    # Find the authenticated user (the API returns all users, but we can identify the current user)
-    # For now, we'll return basic user info structure
-    return {
-        "uri": "clockodo://user-profile",
-        "name": "User Profile",
-        "description": "Authenticated user profile information",
-        "mimeType": "application/json",
-        "content": {"users_count": len(users.get("users", []))},
-    }
-
-
 def get_customers_resource() -> dict:
     """
     Get the list of customers as a resource.

@@ -15,7 +15,7 @@ Architecture: Server → Service → Client
 from __future__ import annotations
 
 from ..client import ClockodoClient
-from ..hr_analyzer import analyze_overtime, analyze_vacation, get_hr_violations
+from ..hr_analyzer import get_hr_violations
 
 
 class HRService:
@@ -42,6 +42,22 @@ class HRService:
         """
         self.client = client
 
+    @staticmethod
+    def _flat_violations(per_user: list[dict]) -> list[dict]:
+        """Flatten per-user violations; vacation ones get `violation_type`."""
+        flat = []
+        for user in per_user:
+            for violation in user.get("violations") or []:
+                item = {
+                    "user_id": user.get("user_id"),
+                    "user_name": user.get("user_name"),
+                    **{k: v for k, v in violation.items() if k != "type"},
+                }
+                if violation["type"] != "excessive_overtime":
+                    item["violation_type"] = violation["type"]
+                flat.append(item)
+        return flat
+
     def check_overtime_compliance(
         self, year: int, max_overtime_hours: float = 80
     ) -> dict:
@@ -57,19 +73,13 @@ class HRService:
         """
         reports = self.client.get_user_reports(year=year)
 
-        violations = []
-        for report in reports.get("userreports", []):
-            overtime_result = analyze_overtime(report, max_overtime_hours)
-            if overtime_result["has_violation"]:
-                violations.append(
-                    {
-                        "user_id": report["users_id"],
-                        "user_name": report["users_name"],
-                        "overtime_hours": overtime_result["overtime_hours"],
-                        "threshold": overtime_result["threshold"],
-                        "excess_hours": overtime_result["excess_hours"],
-                    }
-                )
+        config = {
+            "year": year,
+            "max_overtime_hours": max_overtime_hours,
+            "min_vacation_days": 0,
+            "max_vacation_remaining": float("inf"),
+        }
+        violations = self._flat_violations(get_hr_violations(reports, config))
 
         return {
             "year": year,
@@ -97,24 +107,13 @@ class HRService:
         """
         reports = self.client.get_user_reports(year=year)
 
-        violations = []
-        for report in reports.get("userreports", []):
-            vacation_result = analyze_vacation(
-                report, min_vacation_days, max_vacation_remaining
-            )
-            if vacation_result["has_violation"]:
-                violation = {
-                    "user_id": report["users_id"],
-                    "user_name": report["users_name"],
-                    "violation_type": vacation_result["violation_type"],
-                    "used_days": vacation_result["used_days"],
-                    "remaining_days": vacation_result["remaining_days"],
-                }
-                if "days_short" in vacation_result:
-                    violation["days_short"] = vacation_result["days_short"]
-                if "excess_days" in vacation_result:
-                    violation["excess_days"] = vacation_result["excess_days"]
-                violations.append(violation)
+        config = {
+            "year": year,
+            "max_overtime_hours": float("inf"),
+            "min_vacation_days": min_vacation_days,
+            "max_vacation_remaining": max_vacation_remaining,
+        }
+        violations = self._flat_violations(get_hr_violations(reports, config))
 
         return {
             "year": year,
@@ -159,7 +158,7 @@ class HRService:
 
         return {
             "year": year,
-            "total_employees": len(reports.get("userreports", [])),
+            "total_employees": len(reports.get("userreports") or []),
             "employees_with_violations": employees_with_violations,
             "total_employees_with_violations": len(employees_with_violations),
             "config": config,

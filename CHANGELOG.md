@@ -8,9 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Date range limits** (#58): `get_my_time_entries` refuses ranges longer than 366 days or with `time_until` not after `time_since` (`ValueError`).
+- **Error-path tests** (#58): `_request` is tested for 401/403/404/422/500/timeout.
 - **`ClockodoClient.get_me()`** (#55): `GET v4/users/me`. `UserService.get_current_user_id` uses it and only falls back to the old email scan of `v3/users` on a 404.
 
+### Removed
+- **Dead code** (#58): the empty `models` package and the unused `get_user_profile_resource`.
+
 ### Changed
+- **Error details** (#58): the `Details:` text appended to API errors is cut to 500 characters and logged at WARNING instead of ERROR.
+- **HR service** (#58): `check_overtime_compliance` and `check_vacation_compliance` derive their violations from `hr_analyzer.get_hr_violations`; output unchanged.
+- **Docs and config** (#58): README, `.env.example` and `docker-compose.yml` now match the current env vars and mcp >= 2.3.
 - **Typed edit tools** (#56): `edit_my_time_entry` and `edit_team_member_entry` take explicit optional params (`time_since`, `time_until`, `text`, `customers_id`, `services_id`, `projects_id`, `billable` 0/1/2) instead of a free-form `data` dict. Times are normalised to UTC like in `add_my_time_entry`; only passed fields are sent and at least one is required. `users_id` can no longer be passed, so entries can't be moved to another user.
 - **`create_team_member_vacation`** (#56): `auto_approve` now defaults to `False`.
 - **`delete_my_vacation`** (#56): withdraws (cancels) an approved absence before deleting it; Clockodo refuses to delete approved absences otherwise.

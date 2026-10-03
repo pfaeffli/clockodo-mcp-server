@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_BASE_URL = "https://my.clockodo.com/api/"
 
+MAX_ERROR_DETAIL = 500
 MAX_PAGES = 100
 MAX_RETRIES = 3
 RETRY_BASE_DELAY = 0.5
@@ -219,10 +220,13 @@ class ClockodoClient:  # pylint: disable=too-many-public-methods
                 error_detail = resp.json()
             except ValueError:
                 raise e from None
-            logger.error("API Error: %s - %s", e, error_detail)
-            # Re-raise with detail in message
+            detail = str(error_detail)
+            if len(detail) > MAX_ERROR_DETAIL:
+                detail = detail[:MAX_ERROR_DETAIL] + "...[truncated]"
+            logger.warning("API Error: %s - %s", e, detail)
+            # Re-raise with (truncated) detail in message
             raise httpx.HTTPStatusError(
-                f"{e} - Details: {error_detail}",
+                f"{e} - Details: {detail}",
                 request=e.request,
                 response=e.response,
             ) from e

@@ -80,26 +80,6 @@ def test_get_current_time_entry_resource_with_running_clock(mock_client):
     assert result["content"]["customers_name"] == "ACME Corp"
 
 
-def test_get_user_profile_resource(mock_client):
-    """Test user profile resource."""
-    mock_client.list_users.return_value = {
-        "users": [
-            {"id": 1, "name": "John Doe"},
-            {"id": 2, "name": "Jane Smith"},
-        ]
-    }
-
-    with patch(
-        "clockodo_mcp.resources.ClockodoClient.from_env", return_value=mock_client
-    ):
-        result = resources.get_user_profile_resource()
-
-    assert result["uri"] == "clockodo://user-profile"
-    assert result["name"] == "User Profile"
-    assert result["mimeType"] == "application/json"
-    assert result["content"]["users_count"] == 2
-
-
 def test_get_customers_resource(mock_client):
     """Test customers resource."""
     mock_client.list_customers.return_value = {
