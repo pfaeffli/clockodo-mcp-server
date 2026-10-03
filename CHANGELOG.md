@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **API error details** (#30): Clockodo's JSON error body is now included in the raised error message (`... - Details: ...`); previously it was swallowed and only the bare HTTP error was shown.
 - **Own-record checks** (#43): `cancel_my_vacation`, `delete_my_vacation`, `edit_my_entry` and `delete_my_entry` now refuse absences and entries that belong to other users, even with a team-leader API key, like `edit_my_vacation` already did.
 
+### Changed
+- **mcp 2.x SDK** (#36): Moved from the `mcp<2` pin to `mcp>=2.3,<3`. `FastMCP` is now `MCPServer` (`mcp.server.mcpserver`), and the SSE host and port are passed to `run()` instead of the constructor. Tools, resources and transports behave as before.
+
 ## [0.6.0] - 2026-10-03
 
 ### Added
