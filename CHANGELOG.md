@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-04
+
+### Breaking
+- **SSE** binds `127.0.0.1` by default; a non-loopback host requires `CLOCKODO_MCP_AUTH_TOKEN`, and the Host header must match `CLOCKODO_MCP_ALLOWED_HOSTS` (#54).
+- **Times without a zone** are now read as `CLOCKODO_TIMEZONE` (default Europe/Zurich) instead of UTC (#52).
+- **Employee role** no longer gets `list_users` or `get_raw_user_reports`; admin placeholder tools are gone (#53).
+- **`edit_my_time_entry` / `edit_team_member_entry`** take typed parameters instead of a `data` dict (#56).
+- **Unknown `CLOCKODO_MCP_ROLE` / `CLOCKODO_MCP_TRANSPORT`** values now fail at startup (#54).
+
 ### Added
 - **Date range limits** (#58): `get_my_time_entries` refuses ranges longer than 366 days or with `time_until` not after `time_since` (`ValueError`).
 - **Error-path tests** (#58): `_request` is tested for 401/403/404/422/500/timeout.
