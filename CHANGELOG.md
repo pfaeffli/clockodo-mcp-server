@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **API error details** (#30): Clockodo's JSON error body is now included in the raised error message (`... - Details: ...`); previously it was swallowed and only the bare HTTP error was shown.
+- **Own-record checks** (#43): `cancel_my_vacation`, `delete_my_vacation`, `edit_my_entry` and `delete_my_entry` now refuse absences and entries that belong to other users, even with a team-leader API key, like `edit_my_vacation` already did.
 
 ## [0.6.0] - 2026-10-03
 

@@ -105,7 +105,7 @@ def test_stop_my_clock_raises_when_not_running():
 
 
 def test_cancel_my_vacation():
-    client = MagicMock()
+    client = _own_absence_client()
     service = UserService(client)
 
     service.cancel_my_vacation(absence_id=2001)
@@ -114,8 +114,18 @@ def test_cancel_my_vacation():
     client.edit_absence.assert_called_once_with(2001, {"status": 3})
 
 
+def test_cancel_my_vacation_rejects_other_users_absence():
+    client = _own_absence_client(users_id=99)
+    service = UserService(client)
+
+    with pytest.raises(PermissionError, match="Absence 2001 is not your absence"):
+        service.cancel_my_vacation(absence_id=2001)
+
+    client.edit_absence.assert_not_called()
+
+
 def test_delete_my_vacation_without_auto_cancel():
-    client = MagicMock()
+    client = _own_absence_client()
     service = UserService(client)
 
     service.delete_my_vacation(absence_id=2001)
@@ -124,7 +134,7 @@ def test_delete_my_vacation_without_auto_cancel():
 
 
 def test_delete_my_vacation_with_auto_cancel():
-    client = MagicMock()
+    client = _own_absence_client()
     service = UserService(client)
 
     service.delete_my_vacation(absence_id=2001, auto_cancel=True)
@@ -136,7 +146,7 @@ def test_delete_my_vacation_with_auto_cancel():
 
 def test_delete_my_vacation_with_auto_cancel_failure():
     """Test delete_my_vacation when cancel fails but deletion continues."""
-    client = MagicMock()
+    client = _own_absence_client()
     client.edit_absence.side_effect = Exception("Cancel failed")
     client.delete_absence.return_value = {"success": True}
 
@@ -148,6 +158,18 @@ def test_delete_my_vacation_with_auto_cancel_failure():
     client.edit_absence.assert_called_once_with(2001, {"status": 3})
     client.delete_absence.assert_called_once_with(2001)
     assert result["success"] is True
+
+
+@pytest.mark.parametrize("auto_cancel", [False, True])
+def test_delete_my_vacation_rejects_other_users_absence(auto_cancel):
+    client = _own_absence_client(users_id=99)
+    service = UserService(client)
+
+    with pytest.raises(PermissionError, match="Absence 2001 is not your absence"):
+        service.delete_my_vacation(absence_id=2001, auto_cancel=auto_cancel)
+
+    client.edit_absence.assert_not_called()
+    client.delete_absence.assert_not_called()
 
 
 def test_add_my_vacation():
@@ -433,9 +455,15 @@ def test_add_my_entry_with_text():
     assert result["entry"]["text"] == "Work description"
 
 
+def _own_entry_client(users_id=42):
+    client = _absence_client()
+    client.get_entry.return_value = {"entry": {"id": 3001, "users_id": users_id}}
+    return client
+
+
 def test_edit_my_entry():
     """Test editing an entry."""
-    client = MagicMock()
+    client = _own_entry_client()
     client.edit_entry.return_value = {"entry": {"id": 3001, "text": "Updated"}}
 
     service = UserService(client)
@@ -445,9 +473,19 @@ def test_edit_my_entry():
     assert result["entry"]["text"] == "Updated"
 
 
+def test_edit_my_entry_rejects_other_users_entry():
+    client = _own_entry_client(users_id=99)
+
+    service = UserService(client)
+    with pytest.raises(PermissionError, match="Entry 3001 is not your entry"):
+        service.edit_my_entry(entry_id=3001, data={"text": "Updated"})
+
+    client.edit_entry.assert_not_called()
+
+
 def test_delete_my_entry():
     """Test deleting an entry."""
-    client = MagicMock()
+    client = _own_entry_client()
     client.delete_entry.return_value = {"success": True}
 
     service = UserService(client)
@@ -455,6 +493,16 @@ def test_delete_my_entry():
 
     client.delete_entry.assert_called_once_with(3001)
     assert result["success"] is True
+
+
+def test_delete_my_entry_rejects_other_users_entry():
+    client = _own_entry_client(users_id=99)
+
+    service = UserService(client)
+    with pytest.raises(PermissionError, match="Entry 3001 is not your entry"):
+        service.delete_my_entry(entry_id=3001)
+
+    client.delete_entry.assert_not_called()
 
 
 def _absence(absence_id, abs_type=1):

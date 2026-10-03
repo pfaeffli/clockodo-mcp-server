@@ -149,9 +149,7 @@ class UserService:
         if not changes:
             raise ValueError("Nothing to change: pass dates or half_day")
 
-        absence = self.client.get_absence(absence_id).get("data") or {}
-        if absence.get("users_id") != self.get_current_user_id():
-            raise PermissionError(f"Absence {absence_id} is not your absence")
+        absence = self._get_own_absence(absence_id)
         # Clockodo's spec doesn't list half_day on absences; use it if returned
         _check_half_day(
             half_day if half_day is not None else absence.get("half_day"),
@@ -160,6 +158,20 @@ class UserService:
         )
 
         return self.client.edit_absence(absence_id, changes)
+
+    def _get_own_absence(self, absence_id: int) -> dict:
+        """Fetch an absence and ensure it belongs to the current user."""
+        absence = self.client.get_absence(absence_id).get("data") or {}
+        if absence.get("users_id") != self.get_current_user_id():
+            raise PermissionError(f"Absence {absence_id} is not your absence")
+        return absence
+
+    def _get_own_entry(self, entry_id: int) -> dict:
+        """Fetch a time entry and ensure it belongs to the current user."""
+        entry = self.client.get_entry(entry_id).get("entry") or {}
+        if entry.get("users_id") != self.get_current_user_id():
+            raise PermissionError(f"Entry {entry_id} is not your entry")
+        return entry
 
     def get_my_absences(self, year: int, absence_type: int | None = None) -> dict:
         """List the authenticated user's absences for a year, optionally by type."""
@@ -203,15 +215,17 @@ class UserService:
 
     def edit_my_entry(self, entry_id: int, data: dict) -> dict:
         """
-        Edit a time entry.
-        Note: The API will validate if the user has permission to edit this entry.
+        Edit one of the current user's time entries.
+
+        The entry must belong to the current user, even if the API key could
+        edit other users' entries.
         """
-        # For security, we could verify if the entry belongs to the user,
-        # but Clockodo API handles this based on permissions.
+        self._get_own_entry(entry_id)
         return self.client.edit_entry(entry_id, data)
 
     def delete_my_entry(self, entry_id: int) -> dict:
-        """Delete a time entry."""
+        """Delete one of the current user's time entries."""
+        self._get_own_entry(entry_id)
         return self.client.delete_entry(entry_id)
 
     def cancel_my_vacation(self, absence_id: int) -> dict:
@@ -223,7 +237,9 @@ class UserService:
         - Status 3 can then be deleted
 
         Note: Status 4 (request cancelled) is only valid from status 0 (enquired).
+        The absence must belong to the current user.
         """
+        self._get_own_absence(absence_id)
         return self.client.edit_absence(absence_id, {"status": 3})
 
     def delete_my_vacation(self, absence_id: int, auto_cancel: bool = False) -> dict:
@@ -237,7 +253,9 @@ class UserService:
         Note: Absences must be in status 2 (declined), 3 (approval cancelled),
               or 4 (request cancelled) before deletion.
               This method uses status 3 for approved absences.
+              The absence must belong to the current user.
         """
+        self._get_own_absence(absence_id)
         if auto_cancel:
             try:
                 self.cancel_my_vacation(absence_id)
