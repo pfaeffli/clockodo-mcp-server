@@ -8,6 +8,7 @@ Pattern: Service Layer (Layer 2)
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 import httpx
@@ -16,6 +17,8 @@ from ..date_utils import normalize_datetime
 
 if TYPE_CHECKING:
     from ..client import ClockodoClient
+
+logger = logging.getLogger(__name__)
 
 
 def _check_half_day(
@@ -42,6 +45,14 @@ class UserService:
         if self._current_user_id is not None:
             return self._current_user_id
 
+        try:
+            self._current_user_id = self.client.get_me()["data"]["id"]
+            return self._current_user_id
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code != 404:
+                raise
+
+        # Fallback for installations without /v4/users/me
         users_data = self.client.list_users()
         for user in users_data.get("users", []):
             if user.get("email") == self.client.api_user:
@@ -263,12 +274,14 @@ class UserService:
         self._get_own_absence(absence_id)
         if auto_cancel:
             try:
-                self.cancel_my_vacation(absence_id)
-            # pylint: disable-next=broad-exception-caught
-            except (
-                httpx.HTTPStatusError,
-                Exception,
-            ):
-                # If cancelling fails (e.g., already cancelled), try deletion anyway
-                pass
+                self.client.edit_absence(absence_id, {"status": 3})
+            except httpx.HTTPStatusError as e:
+                if not 400 <= e.response.status_code < 500:
+                    raise
+                # E.g. already cancelled: try deletion anyway
+                logger.info(
+                    "Auto-cancel of absence %s failed with %s, deleting anyway",
+                    absence_id,
+                    e.response.status_code,
+                )
         return self.client.delete_absence(absence_id)

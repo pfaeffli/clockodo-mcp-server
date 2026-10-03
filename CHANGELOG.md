@@ -7,7 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`ClockodoClient.get_me()`** (#55): `GET v4/users/me`. `UserService.get_current_user_id` uses it and only falls back to the old email scan of `v3/users` on a 404.
+
+### Changed
+- **Shared HTTP client with retry** (#55): Requests go through one lazily created `httpx.Client` per `ClockodoClient` instead of opening a connection each time. GET, PUT and DELETE are retried up to 3 times (0.5 s, 1 s, 2 s backoff, `Retry-After` honoured up to 10 s) on 429, 502, 503, 504 and transport errors. POST is never retried.
+- **`delete_my_vacation(auto_cancel=True)`** (#55): Only 4xx errors from the cancel step are ignored (logged at INFO); other errors are raised. Ownership is checked once.
+
 ### Fixed
+- **Pagination** (#55): `list_users`, `list_customers`, `list_projects`, `list_services` and `list_entries` read only page 1; they now fetch all pages (capped at 100) and return the combined list.
+- **`get_user_reports` errors** (#55): Goes through the shared request path, so Clockodo's error details are kept in the message.
 - **Entry reassignment**: `edit_my_time_entry` refused other users' entries but still let `data={"users_id": …}` move your own entry to someone else. Changing `users_id` to another user is now refused.
 
 ## [0.7.0] - 2026-10-03

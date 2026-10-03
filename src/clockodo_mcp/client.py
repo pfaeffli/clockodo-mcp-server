@@ -15,7 +15,8 @@ from __future__ import annotations
 import logging
 import os
 import re
-from dataclasses import dataclass
+import time
+from dataclasses import dataclass, field
 
 import httpx
 
@@ -24,9 +25,16 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_BASE_URL = "https://my.clockodo.com/api/"
 
+MAX_PAGES = 100
+MAX_RETRIES = 3
+RETRY_BASE_DELAY = 0.5
+RETRY_MAX_DELAY = 10.0
+RETRY_STATUSES = frozenset({429, 502, 503, 504})
+IDEMPOTENT_METHODS = frozenset({"GET", "PUT", "DELETE"})
+
 
 @dataclass
-class ClockodoClient:
+class ClockodoClient:  # pylint: disable=too-many-public-methods
     """
     HTTP client for Clockodo REST API.
 
@@ -41,6 +49,7 @@ class ClockodoClient:
     user_agent: str | None = None
     base_url: str = DEFAULT_BASE_URL
     external_app_contact: str | None = None
+    _http: httpx.Client | None = field(default=None, init=False, repr=False)
 
     def __post_init__(self):
         """Normalize base_url to always end with /api/ and no version prefix."""
@@ -114,6 +123,68 @@ class ClockodoClient:
             headers["User-Agent"] = "clockodo-mcp/unknown"
         return headers
 
+    @property
+    def http(self) -> httpx.Client:
+        """Shared HTTP client (created lazily, reuses connections)."""
+        if self._http is None:
+            self._http = httpx.Client(headers=self.default_headers, timeout=30.0)
+        return self._http
+
+    def close(self) -> None:
+        """Close the shared HTTP client."""
+        if self._http is not None:
+            self._http.close()
+            self._http = None
+
+    def _sleep(self, seconds: float) -> None:
+        """Sleep between retries (separate method so tests can patch it)."""
+        time.sleep(seconds)
+
+    @staticmethod
+    def _retry_delay(attempt: int, response: httpx.Response | None) -> float:
+        """Exponential backoff (0.5, 1, 2 s), honouring Retry-After seconds."""
+        delay = RETRY_BASE_DELAY * 2**attempt
+        if response is not None:
+            try:
+                delay = float(response.headers["Retry-After"])
+            except (KeyError, ValueError):
+                pass
+        return min(max(delay, 0.0), RETRY_MAX_DELAY)
+
+    def _send(
+        self,
+        method: str,
+        url: str,
+        params: dict | None,
+        json_data: dict | None,
+        timeout: float,
+    ) -> httpx.Response:
+        """Send a request, retrying idempotent methods on transient failures."""
+        retries = MAX_RETRIES if method.upper() in IDEMPOTENT_METHODS else 0
+        attempt = 0
+        while True:
+            try:
+                resp = self.http.request(
+                    method,
+                    url,
+                    params=params,
+                    json=json_data,
+                    timeout=timeout,
+                )
+            except httpx.TransportError as e:
+                if attempt >= retries:
+                    raise
+                logger.warning("%s %s failed (%s), retrying", method, url, e)
+                self._sleep(self._retry_delay(attempt, None))
+            else:
+                if resp.status_code not in RETRY_STATUSES or attempt >= retries:
+                    return resp
+                logger.warning(
+                    "%s %s returned %s, retrying", method, url, resp.status_code
+                )
+                self._sleep(self._retry_delay(attempt, resp))
+            attempt += 1
+
     def _request(
         self,
         method: str,
@@ -124,6 +195,9 @@ class ClockodoClient:
     ) -> dict:
         """
         Make HTTP request to Clockodo API.
+
+        Idempotent methods (GET, PUT, DELETE) are retried up to 3 times on
+        429/502/503/504 and transport errors; POST is never retried.
 
         Args:
             method: HTTP method (GET, POST, PUT, DELETE)
@@ -136,14 +210,7 @@ class ClockodoClient:
             JSON response as dictionary
         """
         url = f"{self.base_url}{endpoint}"
-        resp = httpx.request(
-            method=method,
-            url=url,
-            headers=self.default_headers,
-            params=params,
-            json=json_data,
-            timeout=timeout,
-        )
+        resp = self._send(method, url, params, json_data, timeout)
         try:
             resp.raise_for_status()
         except httpx.HTTPStatusError as e:
@@ -161,6 +228,38 @@ class ClockodoClient:
             ) from e
         return resp.json()
 
+    def _get_all_pages(
+        self, endpoint: str, key: str, params: dict | None = None
+    ) -> dict:
+        """
+        GET a paged endpoint and concatenate the list under `key` over all pages.
+
+        Follows pages until current_page >= count_pages (at most MAX_PAGES).
+        The result is the last page's response with the full list under `key`
+        (the list may come as 'data', which is normalized to `key`).
+        """
+        items: list = []
+        page = 1
+        while True:
+            page_params = dict(params or {})
+            if page > 1:
+                page_params["page"] = page
+            resp = self._request("GET", endpoint, params=page_params or None)
+            items.extend(resp.get(key) or resp.get("data") or [])
+            paging = resp.get("paging") or {}
+            if (
+                paging.get("current_page", page) >= paging.get("count_pages", 1)
+                or page >= MAX_PAGES
+            ):
+                break
+            page += 1
+        if page >= MAX_PAGES and paging.get("current_page", page) < paging.get(
+            "count_pages", 1
+        ):
+            logger.warning("Stopped paging %s after %s pages", endpoint, MAX_PAGES)
+        resp[key] = items
+        return resp
+
     # ==============================================
     # API Endpoints
     # ==============================================
@@ -172,11 +271,11 @@ class ClockodoClient:
         Returns:
             Dictionary with 'users' key containing list of user objects
         """
-        resp = self._request("GET", "v3/users")
-        # Normalize response (pattern change: 'data' instead of 'users')
-        if "data" in resp and "users" not in resp:
-            resp["users"] = resp["data"]
-        return resp
+        return self._get_all_pages("v3/users", "users")
+
+    def get_me(self) -> dict:
+        """Get the authenticated user (v4 API): `{"data": {...}}`."""
+        return self._request("GET", "v4/users/me")
 
     def list_customers(self) -> dict:
         """
@@ -185,11 +284,7 @@ class ClockodoClient:
         Returns:
             Dictionary with 'customers' key containing list of customer objects
         """
-        resp = self._request("GET", "v3/customers")
-        # Normalize response (pattern change: 'data' instead of 'customers')
-        if "data" in resp and "customers" not in resp:
-            resp["customers"] = resp["data"]
-        return resp
+        return self._get_all_pages("v3/customers", "customers")
 
     def list_services(self) -> dict:
         """
@@ -198,11 +293,7 @@ class ClockodoClient:
         Returns:
             Dictionary with 'services' key containing list of service objects
         """
-        resp = self._request("GET", "v4/services")
-        # Normalize v4 response (pattern change: 'data' instead of 'services')
-        if "data" in resp and "services" not in resp:
-            resp["services"] = resp["data"]
-        return resp
+        return self._get_all_pages("v4/services", "services")
 
     def list_projects(self) -> dict:
         """
@@ -211,11 +302,7 @@ class ClockodoClient:
         Returns:
             Dictionary with 'projects' key containing list of project objects
         """
-        resp = self._request("GET", "v4/projects")
-        # Normalize v4 response (pattern change: 'data' instead of 'projects')
-        if "data" in resp and "projects" not in resp:
-            resp["projects"] = resp["data"]
-        return resp
+        return self._get_all_pages("v4/projects", "projects")
 
     def get_user_reports(
         self, year: int, user_id: int | None = None, type_level: int = 0
@@ -240,29 +327,7 @@ class ClockodoClient:
             params["users_id"] = user_id
 
         # userreports is v1 API: /api/userreports
-        url = f"{self.base_url}userreports"
-
-        resp = httpx.request(
-            method="GET",
-            url=url,
-            headers=self.default_headers,
-            params=params,
-            timeout=30.0,
-        )
-        try:
-            resp.raise_for_status()
-        except httpx.HTTPStatusError as e:
-            try:
-                error_detail = resp.json()
-                logger.error("API Error (v1): %s - %s", e, error_detail)
-                raise httpx.HTTPStatusError(
-                    f"{e} - Details: {error_detail}",
-                    request=e.request,
-                    response=e.response,
-                ) from e
-            except Exception as parse_error:
-                raise e from parse_error
-        return resp.json()
+        return self._request("GET", "userreports", params=params)
 
     # ==============================================
     # Clock Operations (v2 is the latest as of 2026-01-14)
@@ -335,7 +400,7 @@ class ClockodoClient:
         }
         if user_id is not None:
             params["filter[users_id]"] = user_id
-        return self._request("GET", "v2/entries", params=params)
+        return self._get_all_pages("v2/entries", "entries", params=params)
 
     def create_entry(
         self,

@@ -1,14 +1,36 @@
 from unittest.mock import MagicMock
 
+import httpx
 import pytest
 
 from clockodo_mcp.services.user_service import UserService
 
 
+def _status_error(status: int) -> httpx.HTTPStatusError:
+    request = httpx.Request("GET", "https://example.test/")
+    return httpx.HTTPStatusError(
+        f"HTTP {status}",
+        request=request,
+        response=httpx.Response(status, request=request),
+    )
+
+
 def test_get_current_user_id():
     client = MagicMock()
-    # Mock list_users to return a list where one user matches the client's api_user
     client.api_user = "alice@example.com"
+    client.get_me.return_value = {"data": {"id": 2, "email": "alice@example.com"}}
+
+    service = UserService(client)
+
+    assert service.get_current_user_id() == 2
+    client.get_me.assert_called_once()
+    client.list_users.assert_not_called()
+
+
+def test_get_current_user_id_falls_back_to_email_scan_on_404():
+    client = MagicMock()
+    client.api_user = "alice@example.com"
+    client.get_me.side_effect = _status_error(404)
     client.list_users.return_value = {
         "users": [
             {"id": 1, "email": "bob@example.com"},
@@ -16,16 +38,23 @@ def test_get_current_user_id():
         ]
     }
 
-    service = UserService(client)
-    user_id = service.get_current_user_id()
-
-    assert user_id == 2
+    assert UserService(client).get_current_user_id() == 2
     client.list_users.assert_called_once()
+
+
+def test_get_current_user_id_does_not_swallow_other_errors():
+    client = MagicMock()
+    client.get_me.side_effect = _status_error(401)
+
+    with pytest.raises(httpx.HTTPStatusError):
+        UserService(client).get_current_user_id()
+    client.list_users.assert_not_called()
 
 
 def test_get_current_user_id_raises_when_not_found():
     client = MagicMock()
     client.api_user = "notfound@example.com"
+    client.get_me.side_effect = _status_error(404)
     client.list_users.return_value = {
         "users": [
             {"id": 1, "email": "bob@example.com"},
@@ -56,12 +85,13 @@ def test_get_current_user_id_cached():
     client.list_users.return_value = {
         "users": [{"id": 2, "email": "alice@example.com"}]
     }
+    client.get_me.return_value = {"data": {"id": 2}}
 
     service = UserService(client)
     service.get_current_user_id()
     service.get_current_user_id()
 
-    assert client.list_users.call_count == 1
+    assert client.get_me.call_count == 1
 
 
 def test_start_my_clock():
@@ -70,6 +100,7 @@ def test_start_my_clock():
     client.list_users.return_value = {
         "users": [{"id": 2, "email": "alice@example.com"}]
     }
+    client.get_me.return_value = {"data": {"id": 2}}
 
     service = UserService(client)
     service.start_my_clock(customers_id=123, services_id=456)
@@ -144,20 +175,39 @@ def test_delete_my_vacation_with_auto_cancel():
     client.delete_absence.assert_called_once_with(2001)
 
 
-def test_delete_my_vacation_with_auto_cancel_failure():
-    """Test delete_my_vacation when cancel fails but deletion continues."""
+@pytest.mark.parametrize("status", [400, 404, 409, 422])
+def test_delete_my_vacation_auto_cancel_swallows_4xx(status):
+    """A 4xx while cancelling (e.g. already cancelled) still allows deletion."""
     client = _own_absence_client()
-    client.edit_absence.side_effect = Exception("Cancel failed")
+    client.edit_absence.side_effect = _status_error(status)
     client.delete_absence.return_value = {"success": True}
 
-    service = UserService(client)
-
-    # Should still attempt deletion even if cancel fails
-    result = service.delete_my_vacation(absence_id=2001, auto_cancel=True)
+    result = UserService(client).delete_my_vacation(absence_id=2001, auto_cancel=True)
 
     client.edit_absence.assert_called_once_with(2001, {"status": 3})
     client.delete_absence.assert_called_once_with(2001)
     assert result["success"] is True
+
+
+@pytest.mark.parametrize(
+    "error", [_status_error(500), _status_error(503), RuntimeError("boom")]
+)
+def test_delete_my_vacation_auto_cancel_reraises_non_4xx(error):
+    client = _own_absence_client()
+    client.edit_absence.side_effect = error
+
+    with pytest.raises(type(error)):
+        UserService(client).delete_my_vacation(absence_id=2001, auto_cancel=True)
+
+    client.delete_absence.assert_not_called()
+
+
+def test_delete_my_vacation_auto_cancel_checks_ownership_once():
+    client = _own_absence_client()
+
+    UserService(client).delete_my_vacation(absence_id=2001, auto_cancel=True)
+
+    client.get_absence.assert_called_once_with(2001)
 
 
 @pytest.mark.parametrize("auto_cancel", [False, True])
@@ -179,6 +229,7 @@ def test_add_my_vacation():
     client.list_users.return_value = {
         "users": [{"id": 42, "email": "alice@example.com"}]
     }
+    client.get_me.return_value = {"data": {"id": 42}}
     client.create_absence.return_value = {"absence": {"id": 2001}}
 
     service = UserService(client)
@@ -326,6 +377,7 @@ def test_get_my_entries():
     client.list_users.return_value = {
         "users": [{"id": 42, "email": "alice@example.com"}]
     }
+    client.get_me.return_value = {"data": {"id": 42}}
     client.list_entries.return_value = {"entries": [{"id": 3001}]}
 
     service = UserService(client)
@@ -346,6 +398,7 @@ def test_add_my_entry():
     client.list_users.return_value = {
         "users": [{"id": 42, "email": "alice@example.com"}]
     }
+    client.get_me.return_value = {"data": {"id": 42}}
     client.create_entry.return_value = {"entry": {"id": 3001}}
 
     service = UserService(client)
@@ -377,6 +430,7 @@ def test_get_my_entries_normalizes_dates():
     client.list_users.return_value = {
         "users": [{"id": 42, "email": "alice@example.com"}]
     }
+    client.get_me.return_value = {"data": {"id": 42}}
     client.list_entries.return_value = {"entries": []}
 
     service = UserService(client)
@@ -398,6 +452,7 @@ def test_add_my_entry_normalizes_dates():
     client.list_users.return_value = {
         "users": [{"id": 42, "email": "alice@example.com"}]
     }
+    client.get_me.return_value = {"data": {"id": 42}}
     client.create_entry.return_value = {"entry": {"id": 3001}}
 
     service = UserService(client)
@@ -428,6 +483,7 @@ def test_add_my_entry_with_text():
     client.list_users.return_value = {
         "users": [{"id": 42, "email": "alice@example.com"}]
     }
+    client.get_me.return_value = {"data": {"id": 42}}
     client.create_entry.return_value = {
         "entry": {"id": 3001, "text": "Work description", "texts_id": 555}
     }
@@ -544,6 +600,7 @@ def _absence_client():
     client.list_users.return_value = {
         "users": [{"id": 42, "email": "alice@example.com"}]
     }
+    client.get_me.return_value = {"data": {"id": 42}}
     return client
 
 
