@@ -130,8 +130,9 @@ class UserService:
         absence = self.client.get_absence(absence_id).get("data") or {}
         if absence.get("users_id") != self.get_current_user_id():
             raise PermissionError(f"Absence {absence_id} is not your absence")
+        # Clockodo's spec doesn't list half_day on absences; use it if returned
         _check_half_day(
-            half_day,
+            half_day if half_day is not None else absence.get("half_day"),
             date_since or absence.get("date_since"),
             date_until or absence.get("date_until"),
         )
