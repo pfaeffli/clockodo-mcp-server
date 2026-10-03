@@ -221,6 +221,11 @@ class UserService:
         edit other users' entries.
         """
         self._get_own_entry(entry_id)
+        if (
+            data.get("users_id", self.get_current_user_id())
+            != self.get_current_user_id()
+        ):
+            raise PermissionError(f"Entry {entry_id} can't be moved to another user")
         return self.client.edit_entry(entry_id, data)
 
     def delete_my_entry(self, entry_id: int) -> dict:
