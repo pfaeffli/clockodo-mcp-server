@@ -88,6 +88,8 @@ jobs:
           format: 'sarif'
           output: 'trivy-results-amd64.sarif'
           severity: 'CRITICAL,HIGH'
+          # Without this, trivy-action puts every severity in the SARIF
+          limit-severities-for-sarif: true
 
       - name: Run Trivy vulnerability scanner (arm64, sarif)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
@@ -96,6 +98,8 @@ jobs:
           format: 'sarif'
           output: 'trivy-results-arm64.sarif'
           severity: 'CRITICAL,HIGH'
+          # Without this, trivy-action puts every severity in the SARIF
+          limit-severities-for-sarif: true
 
       # amd64 results upload under the default category ("Trivy") so the
       # existing GitHub Code Scanning baseline on main keeps matching —
