@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import json
 
-from mcp.server.fastmcp import FastMCP  # type: ignore
+from mcp.server.mcpserver import MCPServer
 
 from . import prompts as prompt_templates
 from . import resources as resource_handlers
@@ -29,8 +29,8 @@ from .tools import debug_tools, hr_tools, team_leader_tools, user_tools
 # Load configuration from environment variables with safe defaults
 config = ServerConfig.from_env()
 
-# Create MCP server instance with configured host and port
-mcp = FastMCP("clockodo", host=config.host, port=config.port)
+# Create MCP server instance (host/port are passed to run() for SSE)
+mcp = MCPServer("clockodo")
 
 
 @mcp.tool()
@@ -511,6 +511,6 @@ register_tools()
 def main() -> None:
     """Run the MCP server using configured transport."""
     if config.transport == "sse":
-        mcp.run(transport="sse")
+        mcp.run(transport="sse", host=config.host, port=config.port)
     else:
         mcp.run(transport="stdio")

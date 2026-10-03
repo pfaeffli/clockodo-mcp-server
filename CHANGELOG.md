@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **mcp 2.x SDK** (#36): Moved from the `mcp<2` pin to `mcp>=2.3,<3`. `FastMCP` is now `MCPServer` (`mcp.server.mcpserver`), and the SSE host and port are passed to `run()` instead of the constructor. Tools, resources and transports behave as before.
+
 ## [0.6.0] - 2026-10-03
 
 ### Added
