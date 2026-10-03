@@ -6,6 +6,10 @@ import os
 from dataclasses import dataclass
 from enum import Enum
 
+DEFAULT_HOST = "127.0.0.1"
+DEFAULT_ALLOWED_HOSTS: tuple[str, ...] = ("127.0.0.1:*", "localhost:*")
+VALID_TRANSPORTS = ("stdio", "sse")
+
 
 class Role(str, Enum):
     """Available roles for Clockodo MCP server."""
@@ -48,8 +52,10 @@ class ServerConfig:  # pylint: disable=too-many-instance-attributes
     Transport configuration:
     - CLOCKODO_MCP_TRANSPORT=stdio (default: stdin/stdout for local processes)
     - CLOCKODO_MCP_TRANSPORT=sse (HTTP/SSE for remote access)
-    - CLOCKODO_MCP_HOST=0.0.0.0 (default: bind to all interfaces for Docker)
+    - CLOCKODO_MCP_HOST=127.0.0.1 (default: loopback only; use 0.0.0.0 in Docker)
     - CLOCKODO_MCP_PORT=8000 (default port when using SSE transport)
+    - CLOCKODO_MCP_ALLOWED_HOSTS=127.0.0.1:*,localhost:* (Host header allow-list)
+    - CLOCKODO_MCP_AUTH_TOKEN=<secret> (bearer token; required for non-loopback hosts)
 
     Legacy configuration (deprecated, but still supported):
     - Individual flags: CLOCKODO_MCP_ENABLE_HR_READONLY=true, etc.
@@ -63,8 +69,10 @@ class ServerConfig:  # pylint: disable=too-many-instance-attributes
     admin_read: bool = False
     admin_edit: bool = False
     transport: str = "stdio"
-    host: str = "0.0.0.0"
+    host: str = DEFAULT_HOST
     port: int = 8000
+    allowed_hosts: tuple[str, ...] = DEFAULT_ALLOWED_HOSTS
+    auth_token: str | None = None
 
     @classmethod
     def from_env(cls) -> "ServerConfig":
@@ -81,9 +89,21 @@ class ServerConfig:  # pylint: disable=too-many-instance-attributes
         # Apply role-based configuration (primary method)
         # Transport configuration (applies to all roles)
         transport = os.getenv("CLOCKODO_MCP_TRANSPORT", "stdio").lower()
-        if transport not in ("stdio", "sse"):
-            transport = "stdio"
-        host = os.getenv("CLOCKODO_MCP_HOST", "0.0.0.0")
+        if transport not in VALID_TRANSPORTS:
+            raise ValueError(
+                f"Invalid CLOCKODO_MCP_TRANSPORT {transport!r}; "
+                f"expected one of: {', '.join(VALID_TRANSPORTS)}"
+            )
+        host = os.getenv("CLOCKODO_MCP_HOST", DEFAULT_HOST)
+        allowed_hosts = (
+            tuple(
+                h.strip()
+                for h in os.getenv("CLOCKODO_MCP_ALLOWED_HOSTS", "").split(",")
+                if h.strip()
+            )
+            or DEFAULT_ALLOWED_HOSTS
+        )
+        auth_token = os.getenv("CLOCKODO_MCP_AUTH_TOKEN") or None
         port = int(os.getenv("CLOCKODO_MCP_PORT", "8000"))
 
         role_configs = {
@@ -97,6 +117,8 @@ class ServerConfig:  # pylint: disable=too-many-instance-attributes
                 "transport": transport,
                 "host": host,
                 "port": port,
+                "allowed_hosts": allowed_hosts,
+                "auth_token": auth_token,
             },
             Role.TEAM_LEADER.value: {
                 "hr_readonly": False,
@@ -108,6 +130,8 @@ class ServerConfig:  # pylint: disable=too-many-instance-attributes
                 "transport": transport,
                 "host": host,
                 "port": port,
+                "allowed_hosts": allowed_hosts,
+                "auth_token": auth_token,
             },
             Role.HR_ANALYTICS.value: {
                 "hr_readonly": True,
@@ -119,6 +143,8 @@ class ServerConfig:  # pylint: disable=too-many-instance-attributes
                 "transport": transport,
                 "host": host,
                 "port": port,
+                "allowed_hosts": allowed_hosts,
+                "auth_token": auth_token,
             },
             Role.ADMIN.value: {
                 "hr_readonly": True,
@@ -130,8 +156,16 @@ class ServerConfig:  # pylint: disable=too-many-instance-attributes
                 "transport": transport,
                 "host": host,
                 "port": port,
+                "allowed_hosts": allowed_hosts,
+                "auth_token": auth_token,
             },
         }
+
+        if role and role not in role_configs:
+            raise ValueError(
+                f"Invalid CLOCKODO_MCP_ROLE {role!r}; "
+                f"expected one of: {', '.join(role_configs)}"
+            )
 
         if role in role_configs:
             return cls(**role_configs[role])  # type: ignore[arg-type]
@@ -149,6 +183,8 @@ class ServerConfig:  # pylint: disable=too-many-instance-attributes
                 "transport": transport,
                 "host": host,
                 "port": port,
+                "allowed_hosts": allowed_hosts,
+                "auth_token": auth_token,
             },
             "user": {
                 "hr_readonly": False,
@@ -160,6 +196,8 @@ class ServerConfig:  # pylint: disable=too-many-instance-attributes
                 "transport": transport,
                 "host": host,
                 "port": port,
+                "allowed_hosts": allowed_hosts,
+                "auth_token": auth_token,
             },
             "team_leader": {
                 "hr_readonly": False,
@@ -171,6 +209,8 @@ class ServerConfig:  # pylint: disable=too-many-instance-attributes
                 "transport": transport,
                 "host": host,
                 "port": port,
+                "allowed_hosts": allowed_hosts,
+                "auth_token": auth_token,
             },
             "admin": {
                 "hr_readonly": True,
@@ -182,6 +222,8 @@ class ServerConfig:  # pylint: disable=too-many-instance-attributes
                 "transport": transport,
                 "host": host,
                 "port": port,
+                "allowed_hosts": allowed_hosts,
+                "auth_token": auth_token,
             },
         }
 
@@ -207,6 +249,8 @@ class ServerConfig:  # pylint: disable=too-many-instance-attributes
             transport=transport,
             host=host,
             port=port,
+            allowed_hosts=allowed_hosts,
+            auth_token=auth_token,
         )
 
     def is_enabled(self, feature: FeatureGroup) -> bool:

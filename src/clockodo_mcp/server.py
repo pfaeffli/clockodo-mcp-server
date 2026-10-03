@@ -14,9 +14,14 @@ Architecture: Server → Service → Client
 
 from __future__ import annotations
 
+import argparse
+import importlib.metadata
 import json
+from collections.abc import Sequence
 
+import uvicorn
 from mcp.server.mcpserver import MCPServer
+from starlette.types import ASGIApp
 
 from . import prompts as prompt_templates
 from . import resources as resource_handlers
@@ -24,12 +29,17 @@ from .client import ClockodoClient
 from .config import FeatureGroup, ServerConfig
 from .services.team_leader_service import TeamLeaderService
 from .tools import debug_tools, hr_tools, team_leader_tools, user_tools
+from .transport_security import (
+    BearerTokenMiddleware,
+    build_transport_security,
+    validate_sse_auth,
+)
 
 # Pattern #2: Configuration Management
 # Load configuration from environment variables with safe defaults
 config = ServerConfig.from_env()
 
-# Create MCP server instance (host/port are passed to run() for SSE)
+# Create MCP server instance (SSE is served via _run_sse() in main())
 mcp = MCPServer("clockodo")
 
 
@@ -532,9 +542,35 @@ def create_server(client=None, test_config: ServerConfig | None = None):
 register_tools()
 
 
-def main() -> None:
+def _package_version() -> str:
+    try:
+        return importlib.metadata.version("clockodo-mcp")
+    except importlib.metadata.PackageNotFoundError:
+        return "unknown"
+
+
+def _run_sse() -> None:
+    """Serve SSE with DNS-rebinding protection and optional/required bearer auth."""
+    validate_sse_auth(config.host, config.auth_token)
+    app: ASGIApp = mcp.sse_app(
+        transport_security=build_transport_security(config.allowed_hosts),
+        host=config.host,
+    )
+    if config.auth_token:
+        app = BearerTokenMiddleware(app, config.auth_token)
+    uvicorn.run(app, host=config.host, port=config.port)
+
+
+def main(argv: Sequence[str] | None = None) -> None:
     """Run the MCP server using configured transport."""
+    parser = argparse.ArgumentParser(
+        prog="clockodo-mcp", description="Clockodo MCP server"
+    )
+    parser.add_argument(
+        "--version", action="version", version=f"%(prog)s {_package_version()}"
+    )
+    parser.parse_args(argv)
     if config.transport == "sse":
-        mcp.run(transport="sse", host=config.host, port=config.port)
+        _run_sse()
     else:
         mcp.run(transport="stdio")
