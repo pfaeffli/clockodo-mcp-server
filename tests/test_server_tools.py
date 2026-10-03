@@ -333,6 +333,11 @@ def test_add_my_entry_tool_with_text(mock_client_class):
 def test_edit_my_entry_tool(mock_client_class):
     mock_client = Mock()
     mock_client_class.from_env.return_value = mock_client
+    mock_client.api_user = "me@example.com"
+    mock_client.list_users.return_value = {
+        "users": [{"id": 42, "email": "me@example.com"}]
+    }
+    mock_client.get_entry.return_value = {"entry": {"id": 300, "users_id": 42}}
     mock_client.edit_entry.return_value = {"entry": {"id": 300, "text": "Updated"}}
 
     result = edit_my_entry(entry_id=300, data={"text": "Updated"})
@@ -345,6 +350,11 @@ def test_edit_my_entry_tool(mock_client_class):
 def test_delete_my_entry_tool(mock_client_class):
     mock_client = Mock()
     mock_client_class.from_env.return_value = mock_client
+    mock_client.api_user = "me@example.com"
+    mock_client.list_users.return_value = {
+        "users": [{"id": 42, "email": "me@example.com"}]
+    }
+    mock_client.get_entry.return_value = {"entry": {"id": 300, "users_id": 42}}
     mock_client.delete_entry.return_value = {"success": True}
 
     result = delete_my_entry(entry_id=300)
@@ -357,6 +367,11 @@ def test_delete_my_entry_tool(mock_client_class):
 def test_delete_my_vacation_tool(mock_client_class):
     mock_client = Mock()
     mock_client_class.from_env.return_value = mock_client
+    mock_client.api_user = "me@example.com"
+    mock_client.list_users.return_value = {
+        "users": [{"id": 42, "email": "me@example.com"}]
+    }
+    mock_client.get_absence.return_value = {"data": {"id": 200, "users_id": 42}}
     mock_client.delete_absence.return_value = {"success": True}
 
     result = delete_my_vacation(absence_id=200)
