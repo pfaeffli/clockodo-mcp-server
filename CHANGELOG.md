@@ -7,13 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`ClockodoClient.get_me()`** (#55): `GET v4/users/me`. `UserService.get_current_user_id` uses it and only falls back to the old email scan of `v3/users` on a 404.
+
 ### Changed
+- **Shared HTTP client with retry** (#55): Requests go through one lazily created `httpx.Client` per `ClockodoClient` instead of opening a connection each time. GET, PUT and DELETE are retried up to 3 times (0.5 s, 1 s, 2 s backoff, `Retry-After` honoured up to 10 s) on 429, 502, 503, 504 and transport errors. POST is never retried.
+- **`delete_my_vacation(auto_cancel=True)`** (#55): Only 4xx errors from the cancel step are ignored (logged at INFO); other errors are raised. Ownership is checked once.
 - **CI hardening** (#57): the Tests workflow now runs `make format-check`, `make lint`, `make type` and `make test` in Docker (the unused host Python setup is gone; job name `test (3.12)` unchanged). Image publishing on version tags now waits for a passing `make test`. Coverage fails below 90%. All actions are pinned by commit SHA and Dockle by version and digest.
 
 ### Fixed
+- **Pagination** (#55): `list_users`, `list_customers`, `list_projects`, `list_services` and `list_entries` read only page 1; they now fetch all pages (capped at 100) and return the combined list.
+- **`get_user_reports` errors** (#55): Goes through the shared request path, so Clockodo's error details are kept in the message.
 - **Claude review bot** (#57): the review workflow ended after 2 turns without commenting because `--allowedTools` allowed only the inline-comment tool, so Claude could neither read the PR nor post. It now also allows `gh pr diff/view/comment`, `Read`, `Grep` and `Glob`, and the job has `pull-requests: write`.
-
-### Fixed
 - **Time zones** (#52): naive times are now interpreted as `Europe/Zurich` (configurable via `CLOCKODO_TIMEZONE`) and every time is sent to Clockodo as UTC `...Z`; offsets like `+02:00`/`-05:00` are converted instead of being passed through or rejected; date-only input is refused. `clockodo://recent-entries` no longer sends a rejected space-separated format and only lists the current user's entries; `clockodo://current-entry` no longer crashes when no clock runs.
 - **Entry reassignment**: `edit_my_time_entry` refused other users' entries but still let `data={"users_id": …}` move your own entry to someone else. Changing `users_id` to another user is now refused.
 
