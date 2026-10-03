@@ -1,6 +1,6 @@
 from unittest.mock import Mock, patch
 
-from clockodo_mcp.server import create_server
+from clockodo_mcp import server as server_module
 from clockodo_mcp.tools.debug_tools import get_raw_user_reports
 from clockodo_mcp.tools.hr_tools import (
     check_overtime_compliance,
@@ -26,10 +26,9 @@ def test_server_list_users_tool_calls_client():
     mock_client = Mock()
     mock_client.list_users.return_value = {"users": [{"id": 1}]}
 
-    server = create_server(client=mock_client)
-
-    # call the tool
-    result = server.tools["list_users"]()
+    with patch("clockodo_mcp.server.ClockodoClient") as client_class:
+        client_class.from_env.return_value = mock_client
+        result = server_module.list_users()
 
     mock_client.list_users.assert_called_once_with()
     assert result["users"][0]["id"] == 1
@@ -39,10 +38,9 @@ def test_server_list_customers_tool_calls_client():
     mock_client = Mock()
     mock_client.list_customers.return_value = {"customers": [{"id": 100}]}
 
-    server = create_server(client=mock_client)
-
-    # call the tool
-    result = server.tools["list_customers"]()
+    with patch("clockodo_mcp.server.ClockodoClient") as client_class:
+        client_class.from_env.return_value = mock_client
+        result = server_module.list_customers()
 
     mock_client.list_customers.assert_called_once_with()
     assert result["customers"][0]["id"] == 100
@@ -52,10 +50,9 @@ def test_server_list_services_tool_calls_client():
     mock_client = Mock()
     mock_client.list_services.return_value = {"services": [{"id": 200}]}
 
-    server = create_server(client=mock_client)
-
-    # call the tool
-    result = server.tools["list_services"]()
+    with patch("clockodo_mcp.server.ClockodoClient") as client_class:
+        client_class.from_env.return_value = mock_client
+        result = server_module.list_services()
 
     mock_client.list_services.assert_called_once_with()
     assert result["services"][0]["id"] == 200
@@ -65,10 +62,9 @@ def test_server_list_projects_tool_calls_client():
     mock_client = Mock()
     mock_client.list_projects.return_value = {"projects": [{"id": 300}]}
 
-    server = create_server(client=mock_client)
-
-    # call the tool
-    result = server.tools["list_projects"]()
+    with patch("clockodo_mcp.server.ClockodoClient") as client_class:
+        client_class.from_env.return_value = mock_client
+        result = server_module.list_projects()
 
     mock_client.list_projects.assert_called_once_with()
     assert result["projects"][0]["id"] == 300
