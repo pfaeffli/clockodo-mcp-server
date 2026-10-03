@@ -9,6 +9,7 @@ from clockodo_mcp.tools.hr_tools import (
 )
 from clockodo_mcp.tools.user_tools import (
     add_my_entry,
+    add_my_sick_day,
     add_my_vacation,
     delete_my_entry,
     delete_my_vacation,
@@ -392,3 +393,27 @@ def test_get_raw_user_reports_tool(mock_client_class):
 
     mock_client.get_user_reports.assert_called_once_with(year=2025)
     assert result["userreports"][0]["users_id"] == 1
+
+
+@patch("clockodo_mcp.tools.user_tools.ClockodoClient")
+def test_add_my_sick_day_tool(mock_client_class):
+    mock_client = Mock()
+    mock_client_class.from_env.return_value = mock_client
+    mock_client.api_user = "me@example.com"
+    mock_client.list_users.return_value = {
+        "users": [{"id": 42, "email": "me@example.com"}]
+    }
+    mock_client.create_absence.return_value = {"data": {"id": 300}}
+
+    result = add_my_sick_day(
+        date_since="2025-01-01", date_until="2025-01-02", child=True
+    )
+
+    mock_client.create_absence.assert_called_once_with(
+        date_since="2025-01-01",
+        date_until="2025-01-02",
+        absence_type=5,
+        user_id=42,
+        sick_note=False,
+    )
+    assert result["data"]["id"] == 300

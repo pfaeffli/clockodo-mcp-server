@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 import respx
 from httpx import Response
@@ -230,3 +232,46 @@ def test_create_team_vacation_no_auto_approve(service, client):
 
     assert result == mock_response
     assert result["absence"]["status"] == 0  # enquired
+
+
+@respx.mock
+def test_create_team_vacation_sick_day_defaults_sick_note(service, client):
+    route = respx.post(f"{client.base_url}v4/absences").mock(
+        return_value=Response(200, json={"data": {"id": 1}})
+    )
+
+    service.create_team_vacation(
+        user_id=42, date_since="2025-02-10", date_until="2025-02-10", absence_type=4
+    )
+
+    assert json.loads(route.calls[0].request.content)["sick_note"] is False
+
+
+@respx.mock
+def test_create_team_vacation_sick_note_passed_through(service, client):
+    route = respx.post(f"{client.base_url}v4/absences").mock(
+        return_value=Response(200, json={"data": {"id": 1}})
+    )
+
+    service.create_team_vacation(
+        user_id=42,
+        date_since="2025-02-10",
+        date_until="2025-02-10",
+        absence_type=5,
+        sick_note=True,
+    )
+
+    assert json.loads(route.calls[0].request.content)["sick_note"] is True
+
+
+@respx.mock
+def test_create_team_vacation_no_sick_note_for_vacation(service, client):
+    route = respx.post(f"{client.base_url}v4/absences").mock(
+        return_value=Response(200, json={"data": {"id": 1}})
+    )
+
+    service.create_team_vacation(
+        user_id=42, date_since="2025-02-10", date_until="2025-02-10"
+    )
+
+    assert "sick_note" not in json.loads(route.calls[0].request.content)
