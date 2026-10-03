@@ -7,15 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`ClockodoClient.get_me()`** (#55): `GET v4/users/me`. `UserService.get_current_user_id` uses it and only falls back to the old email scan of `v3/users` on a 404.
+
 ### Changed
 - **Typed edit tools** (#56): `edit_my_time_entry` and `edit_team_member_entry` take explicit optional params (`time_since`, `time_until`, `text`, `customers_id`, `services_id`, `projects_id`, `billable` 0/1/2) instead of a free-form `data` dict. Times are normalised to UTC like in `add_my_time_entry`; only passed fields are sent and at least one is required. `users_id` can no longer be passed, so entries can't be moved to another user.
 - **`create_team_member_vacation`** (#56): `auto_approve` now defaults to `False`.
 - **`delete_my_vacation`** (#56): withdraws (cancels) an approved absence before deleting it; Clockodo refuses to delete approved absences otherwise.
 - **Fail-fast config** (#54): unknown `CLOCKODO_MCP_ROLE` or `CLOCKODO_MCP_TRANSPORT` raise `ValueError` at startup instead of silently falling back.
 - **`--version`** (#54): `clockodo-mcp --version` prints the version and exits. The Docker `HEALTHCHECK` (`clockodo-mcp --help`) is removed: stdio has no endpoint to probe.
+- **Shared HTTP client with retry** (#55): Requests go through one lazily created `httpx.Client` per `ClockodoClient` instead of opening a connection each time. GET, PUT and DELETE are retried up to 3 times (0.5 s, 1 s, 2 s backoff, `Retry-After` honoured up to 10 s) on 429, 502, 503, 504 and transport errors. POST is never retried.
+- **`delete_my_vacation(auto_cancel=True)`** (#55): Only 4xx errors from the cancel step are ignored (logged at INFO); other errors are raised. Ownership is checked once.
 - **CI hardening** (#57): the Tests workflow now runs `make format-check`, `make lint`, `make type` and `make test` in Docker (the unused host Python setup is gone; job name `test (3.12)` unchanged). Image publishing on version tags now waits for a passing `make test`. Coverage fails below 90%. All actions are pinned by commit SHA and Dockle by version and digest.
 
 ### Fixed
+- **Pagination** (#55): `list_users`, `list_customers`, `list_projects`, `list_services` and `list_entries` read only page 1; they now fetch all pages (capped at 100) and return the combined list.
+- **`get_user_reports` errors** (#55): Goes through the shared request path, so Clockodo's error details are kept in the message.
 - **Claude review bot** (#57): the review workflow ended after 2 turns without commenting because `--allowedTools` allowed only the inline-comment tool, so Claude could neither read the PR nor post. It now also allows `gh pr diff/view/comment`, `Read`, `Grep` and `Glob`, and the job has `pull-requests: write`.
 - **Time zones** (#52): naive times are now interpreted as `Europe/Zurich` (configurable via `CLOCKODO_TIMEZONE`) and every time is sent to Clockodo as UTC `...Z`; offsets like `+02:00`/`-05:00` are converted instead of being passed through or rejected; date-only input is refused. `clockodo://recent-entries` no longer sends a rejected space-separated format and only lists the current user's entries; `clockodo://current-entry` no longer crashes when no clock runs.
 - **Entry reassignment**: `edit_my_time_entry` refused other users' entries but still let `data={"users_id": …}` move your own entry to someone else. Changing `users_id` to another user is now refused.
