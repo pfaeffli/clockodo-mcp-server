@@ -276,12 +276,14 @@ class UserService:
             try:
                 self.client.edit_absence(absence_id, {"status": 3})
             except httpx.HTTPStatusError as e:
-                if not 400 <= e.response.status_code < 500:
+                # 429 means the client's retries were exhausted: surface it
+                status = e.response.status_code
+                if not 400 <= status < 500 or status == 429:
                     raise
                 # E.g. already cancelled: try deletion anyway
                 logger.info(
                     "Auto-cancel of absence %s failed with %s, deleting anyway",
                     absence_id,
-                    e.response.status_code,
+                    status,
                 )
         return self.client.delete_absence(absence_id)

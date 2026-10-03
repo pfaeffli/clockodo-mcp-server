@@ -190,7 +190,8 @@ def test_delete_my_vacation_auto_cancel_swallows_4xx(status):
 
 
 @pytest.mark.parametrize(
-    "error", [_status_error(500), _status_error(503), RuntimeError("boom")]
+    "error",
+    [_status_error(429), _status_error(500), _status_error(503), RuntimeError("boom")],
 )
 def test_delete_my_vacation_auto_cancel_reraises_non_4xx(error):
     client = _own_absence_client()
