@@ -371,7 +371,7 @@ def test_add_my_entry():
 
 
 def test_get_my_entries_normalizes_dates():
-    """Service layer should normalize space-separated dates to ISO 8601."""
+    """Service layer should normalize space-separated dates to UTC (naive = Europe/Zurich)."""
     client = MagicMock()
     client.api_user = "alice@example.com"
     client.list_users.return_value = {
@@ -385,14 +385,14 @@ def test_get_my_entries_normalizes_dates():
     )
 
     client.list_entries.assert_called_once_with(
-        time_since="2025-01-01T00:00:00Z",
-        time_until="2025-01-01T23:59:59Z",
+        time_since="2024-12-31T23:00:00Z",
+        time_until="2025-01-01T22:59:59Z",
         user_id=42,
     )
 
 
 def test_add_my_entry_normalizes_dates():
-    """Service layer should normalize space-separated dates to ISO 8601."""
+    """Service layer should normalize space-separated dates to UTC (naive = Europe/Zurich)."""
     client = MagicMock()
     client.api_user = "alice@example.com"
     client.list_users.return_value = {
@@ -413,8 +413,8 @@ def test_add_my_entry_normalizes_dates():
         customers_id=123,
         services_id=456,
         billable=1,
-        time_since="2025-01-01T09:00:00Z",
-        time_until="2025-01-01T10:00:00Z",
+        time_since="2025-01-01T08:00:00Z",
+        time_until="2025-01-01T09:00:00Z",
         projects_id=None,
         text=None,
         user_id=42,

@@ -243,8 +243,8 @@ def _register_user_read_tools():
         Get time entries for the authenticated user in a given time range.
 
         Args:
-            time_since: Start time (e.g., 2025-01-01T00:00:00Z)
-            time_until: End time (e.g., 2025-01-01T23:59:59Z)
+            time_since: Start time: local Europe/Zurich time or any ISO 8601 with offset (sent to Clockodo as UTC), e.g. 2025-01-01T09:00:00
+            time_until: End time: local Europe/Zurich time or any ISO 8601 with offset (sent to Clockodo as UTC), e.g. 2025-01-01T17:00:00
         """
         return user_tools.get_my_entries(time_since, time_until)
 
@@ -373,8 +373,8 @@ def _register_user_edit_tools():
         Args:
             customers_id: ID of the customer
             services_id: ID of the service
-            time_since: Start time (e.g., 2025-01-01T09:00:00Z)
-            time_until: End time (e.g., 2025-01-01T10:00:00Z)
+            time_since: Start time: local Europe/Zurich time or any ISO 8601 with offset (sent to Clockodo as UTC), e.g. 2025-01-01T09:00:00
+            time_until: End time: local Europe/Zurich time or any ISO 8601 with offset (sent to Clockodo as UTC), e.g. 2025-01-01T10:00:00
             billable: Whether the entry is billable (1) or not (0)
             projects_id: Optional project ID
             text: Optional description
