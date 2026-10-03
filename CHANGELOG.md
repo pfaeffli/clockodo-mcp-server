@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- **SSE hardening** (#54): `CLOCKODO_MCP_HOST` now defaults to `127.0.0.1` (was `0.0.0.0`). DNS-rebinding protection is always enabled with hosts from the new `CLOCKODO_MCP_ALLOWED_HOSTS` (default `127.0.0.1:*,localhost:*`). SSE on a non-loopback host refuses to start without `CLOCKODO_MCP_AUTH_TOKEN`; when a token is set it is enforced as a bearer token on every request (constant-time compare). **Docker users of SSE must now set `CLOCKODO_MCP_HOST=0.0.0.0` and `CLOCKODO_MCP_AUTH_TOKEN`.**
+- **manual-test Jupyter** (#54): bound to `127.0.0.1`, token login restored, `GRANT_SUDO` removed, image pinned, only `manual-test/` and `src/` mounted, credentials via `env_file`. The notebook skips all writing cells unless `ALLOW_WRITES = True`.
+- **`.dockerignore`** (#54): `.env*`, `.git`, caches and `manual-test` no longer enter the build context.
+
+### Changed
+- **Fail-fast config** (#54): unknown `CLOCKODO_MCP_ROLE` or `CLOCKODO_MCP_TRANSPORT` raise `ValueError` at startup instead of silently falling back.
+- **`--version`** (#54): `clockodo-mcp --version` prints the version and exits. The Docker `HEALTHCHECK` (`clockodo-mcp --help`) is removed: stdio has no endpoint to probe.
+
 ### Fixed
 - **Entry reassignment**: `edit_my_time_entry` refused other users' entries but still let `data={"users_id": …}` move your own entry to someone else. Changing `users_id` to another user is now refused.
 

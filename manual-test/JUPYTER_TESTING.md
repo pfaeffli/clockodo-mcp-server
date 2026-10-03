@@ -15,12 +15,13 @@ This guide explains how to test the Clockodo client functions using the provided
    ```
 
 2. **Open your browser:**
-   - Navigate to `http://localhost:8888`
-   - The notebook will open without requiring a token/password
+   - Navigate to `http://127.0.0.1:8888/?token=<token>`; the token is printed in the container logs (`docker compose -f docker-compose.test.yml logs jupyter`)
+   - Credentials come from `.env` via `env_file`, so the file must exist before `make manual-test`
+   - Writing cells are skipped unless you set `ALLOW_WRITES = True` in the first cell
 
 3. **Open the test notebook:**
    - In JupyterLab, navigate to `work/manual-test/test_clockodo.ipynb`
-   - The project directory is mounted at `/home/jovyan/work`
+   - Only `manual-test/` and `src/` are mounted under `/home/jovyan/work`
 
 4. **Configure your credentials:**
    - In the second cell, replace the placeholder values with your actual Clockodo API credentials:

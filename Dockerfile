@@ -16,7 +16,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy project files including .git for version discovery
+# Optional override for builds without a usable repository (e.g. worktrees)
+ARG SETUPTOOLS_SCM_PRETEND_VERSION_FOR_CLOCKODO_MCP
+
+# Copy project files including the repository metadata for version discovery
 COPY . .
 
 # Install project into a prefix directory
@@ -56,9 +59,16 @@ ENV CLOCKODO_BASE_URL="https://my.clockodo.com/api/"
 
 USER appuser
 
-# Health check for MCP server
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD clockodo-mcp --help > /dev/null || exit 1
+# No HEALTHCHECK: the default transport is stdio, so there is no endpoint to
+# probe, and spawning a second process only proves the entry point imports.
+# Run SSE behind an orchestrator probe on the published port if needed.
+#
+# SSE example (binds all interfaces inside the container, so a bearer token is
+# mandatory; publish the port on loopback only):
+#   docker run -p 127.0.0.1:8000:8000 \
+#     -e CLOCKODO_MCP_TRANSPORT=sse -e CLOCKODO_MCP_HOST=0.0.0.0 \
+#     -e CLOCKODO_MCP_AUTH_TOKEN=... -e CLOCKODO_MCP_ALLOWED_HOSTS='localhost:*,127.0.0.1:*' \
+#     clockodo-mcp
 
 # Default command starts the MCP server entrypoint
 ENTRYPOINT ["clockodo-mcp"]

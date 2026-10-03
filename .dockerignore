@@ -1,0 +1,14 @@
+# NOTE: .git is intentionally NOT excluded; the builder stage needs it for
+# setuptools-scm version discovery (it never reaches the final image).
+.env*
+!.env.example
+htmlcov
+.coverage
+.pytest_cache
+.mypy_cache
+.ruff_cache
+__pycache__
+*.pyc
+manual-test
+.claude
+.playwright-mcp

@@ -284,15 +284,22 @@ Add configuration to your IDE's MCP settings (e.g., Claude Desktop):
 
 ```bash
 docker run -d \
-  -p 8000:8000 \
+  -p 127.0.0.1:8000:8000 \
   -e CLOCKODO_API_USER=your@email.com \
   -e CLOCKODO_API_KEY=your_api_key \
   -e CLOCKODO_MCP_ROLE=employee \
   -e CLOCKODO_MCP_TRANSPORT=sse \
   -e CLOCKODO_MCP_HOST=0.0.0.0 \
+  -e CLOCKODO_MCP_AUTH_TOKEN=change-me-long-random-secret \
+  -e CLOCKODO_MCP_ALLOWED_HOSTS='localhost:*,127.0.0.1:*' \
   -e CLOCKODO_MCP_PORT=8000 \
   ghcr.io/pfaeffli/clockodo-mcp-server:latest
 ```
+
+Clients must send `Authorization: Bearer <CLOCKODO_MCP_AUTH_TOKEN>`. The port is
+published on `127.0.0.1` only; put a TLS-terminating reverse proxy in front for
+anything beyond the local machine and add its hostname to
+`CLOCKODO_MCP_ALLOWED_HOSTS`.
 
 **Available image tags:**
 - `latest` - Latest stable release
@@ -323,8 +330,12 @@ docker run -d \
 - `CLOCKODO_MCP_TRANSPORT` - Transport protocol (default: "stdio")
   - `stdio` - Standard input/output for local processes (Claude Desktop, IDEs) **[Recommended]**
   - `sse` - HTTP/SSE for remote access **[Experimental - Known Issues]**
-- `CLOCKODO_MCP_HOST` - Host address to bind to (default: "0.0.0.0")
+- `CLOCKODO_MCP_HOST` - Host address to bind to (default: "127.0.0.1"; use "0.0.0.0" inside Docker)
 - `CLOCKODO_MCP_PORT` - Port for SSE transport (default: 8000)
+- `CLOCKODO_MCP_ALLOWED_HOSTS` - Comma-separated `Host` header allow-list for DNS-rebinding protection, always enabled (default: "127.0.0.1:*,localhost:*")
+- `CLOCKODO_MCP_AUTH_TOKEN` - Bearer token for SSE. **Required** when the host is not loopback (the server refuses to start without it); optional but enforced when set on loopback. Compared in constant time.
+
+Unknown `CLOCKODO_MCP_ROLE` or `CLOCKODO_MCP_TRANSPORT` values abort startup with an error. `clockodo-mcp --version` prints the version and exits.
 
 > **⚠️ SSE Transport Limitation:** The SSE transport is experimental and currently has issues with the MCP library (v1.25.0). The server accepts connections and messages but does not properly send responses back through the event stream, causing client initialization timeouts. **Use stdio transport for production.** SSE support depends on upstream fixes in the MCP library.
 

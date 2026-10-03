@@ -55,12 +55,14 @@ services:
     command: black --check /app/src/clockodo_mcp /app/tests
 
   jupyter:
-    image: quay.io/jupyter/datascience-notebook:latest
+    image: quay.io/jupyter/datascience-notebook:2026-09-29
     ports:
-      - "8888:8888"
+      - "127.0.0.1:8888:8888"
     volumes:
-      - .:/home/jovyan/work
+      - ./manual-test:/home/jovyan/work/manual-test
+      - ./src:/home/jovyan/work/src
+    env_file: .env
     environment:
       - JUPYTER_ENABLE_LAB=yes
-      - GRANT_SUDO=yes
-    command: sh -c "pip install python-dotenv && start-notebook.sh --NotebookApp.token='' --NotebookApp.password=''"
+    # Jupyter generates a login token; it is printed in the container logs.
+    command: sh -c "pip install python-dotenv && start-notebook.sh"

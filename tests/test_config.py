@@ -1,3 +1,5 @@
+import pytest
+
 from clockodo_mcp.config import FeatureGroup, ServerConfig
 
 
@@ -112,12 +114,6 @@ def test_config_transport_from_env_sse(monkeypatch):
     assert config.port == 9000
 
 
-def test_config_transport_invalid_defaults_to_stdio(monkeypatch):
-    monkeypatch.setenv("CLOCKODO_MCP_TRANSPORT", "invalid")
-    config = ServerConfig.from_env()
-    assert config.transport == "stdio"
-
-
 def test_config_transport_case_insensitive(monkeypatch):
     monkeypatch.setenv("CLOCKODO_MCP_TRANSPORT", "SSE")
     config = ServerConfig.from_env()
@@ -126,7 +122,7 @@ def test_config_transport_case_insensitive(monkeypatch):
 
 def test_config_default_host():
     config = ServerConfig()
-    assert config.host == "0.0.0.0"
+    assert config.host == "127.0.0.1"
 
 
 def test_config_host_from_env(monkeypatch):
@@ -140,3 +136,33 @@ def test_config_host_with_role(monkeypatch):
     monkeypatch.setenv("CLOCKODO_MCP_HOST", "localhost")
     config = ServerConfig.from_env()
     assert config.host == "localhost"
+
+
+def test_config_default_host_is_loopback(monkeypatch):
+    monkeypatch.delenv("CLOCKODO_MCP_HOST", raising=False)
+    assert ServerConfig.from_env().host == "127.0.0.1"
+
+
+def test_config_unknown_role_raises(monkeypatch):
+    monkeypatch.setenv("CLOCKODO_MCP_ROLE", "superuser")
+    with pytest.raises(ValueError, match="CLOCKODO_MCP_ROLE"):
+        ServerConfig.from_env()
+
+
+def test_config_unknown_transport_raises(monkeypatch):
+    monkeypatch.setenv("CLOCKODO_MCP_TRANSPORT", "websocket")
+    with pytest.raises(ValueError, match="CLOCKODO_MCP_TRANSPORT"):
+        ServerConfig.from_env()
+
+
+def test_config_allowed_hosts_default(monkeypatch):
+    monkeypatch.delenv("CLOCKODO_MCP_ALLOWED_HOSTS", raising=False)
+    assert ServerConfig.from_env().allowed_hosts == ("127.0.0.1:*", "localhost:*")
+
+
+def test_config_allowed_hosts_and_token_from_env(monkeypatch):
+    monkeypatch.setenv("CLOCKODO_MCP_ALLOWED_HOSTS", "a.example:*, b.example:8000")
+    monkeypatch.setenv("CLOCKODO_MCP_AUTH_TOKEN", "s3cret")
+    config = ServerConfig.from_env()
+    assert config.allowed_hosts == ("a.example:*", "b.example:8000")
+    assert config.auth_token == "s3cret"
