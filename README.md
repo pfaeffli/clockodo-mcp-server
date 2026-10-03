@@ -340,7 +340,7 @@ anything beyond the local machine and add its hostname to
 
 Unknown `CLOCKODO_MCP_ROLE` or `CLOCKODO_MCP_TRANSPORT` values abort startup with an error. `clockodo-mcp --version` prints the version and exits.
 
-> **⚠️ SSE Transport Limitation:** The SSE transport is experimental and currently has issues with the MCP library (v1.25.0). The server accepts connections and messages but does not properly send responses back through the event stream, causing client initialization timeouts. **Use stdio transport for production.** SSE support depends on upstream fixes in the MCP library.
+> **⚠️ SSE Transport Limitation:** The SSE transport is experimental and currently has issues with the MCP library (mcp >= 2.3). The server accepts connections and messages but does not properly send responses back through the event stream, causing client initialization timeouts. **Use stdio transport for production.** SSE support depends on upstream fixes in the MCP library.
 
 ### Role Configuration (Recommended)
 

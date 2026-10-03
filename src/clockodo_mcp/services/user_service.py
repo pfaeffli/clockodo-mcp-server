@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 
 import httpx
 
-from ..date_utils import normalize_datetime
+from ..date_utils import normalize_datetime, normalize_range
 from .entry_changes import build_entry_changes
 
 if TYPE_CHECKING:
@@ -195,10 +195,11 @@ class UserService:
 
     def get_my_entries(self, time_since: str, time_until: str) -> dict:
         """Get time entries for the current user."""
+        since, until = normalize_range(time_since, time_until)
         user_id = self.get_current_user_id()
         return self.client.list_entries(
-            time_since=normalize_datetime(time_since),
-            time_until=normalize_datetime(time_until),
+            time_since=since,
+            time_until=until,
             user_id=user_id,
         )
 

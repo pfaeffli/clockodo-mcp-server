@@ -708,3 +708,33 @@ def test_add_my_sick_day_child_with_note():
         user_id=42,
         sick_note=True,
     )
+
+
+@pytest.mark.parametrize(
+    "since,until",
+    [
+        ("2025-01-02T00:00:00Z", "2025-01-01T00:00:00Z"),
+        ("2025-01-01T00:00:00Z", "2025-01-01T00:00:00Z"),
+        ("2025-01-01T00:00:00Z", "2026-01-02T00:00:01Z"),
+    ],
+)
+def test_get_my_entries_rejects_bad_ranges(since, until):
+    client = MagicMock()
+    service = UserService(client)
+
+    with pytest.raises(ValueError):
+        service.get_my_entries(time_since=since, time_until=until)
+
+    client.list_entries.assert_not_called()
+
+
+def test_get_my_entries_accepts_366_days():
+    client = MagicMock()
+    client.get_me.return_value = {"data": {"id": 42}}
+    client.list_entries.return_value = {"entries": []}
+
+    UserService(client).get_my_entries(
+        time_since="2025-01-01T00:00:00Z", time_until="2026-01-02T00:00:00Z"
+    )
+
+    client.list_entries.assert_called_once()
