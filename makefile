@@ -39,13 +39,22 @@ help:: ##@Usage Show this help.
 	@echo ""
 	@perl -e '$(HELP_FUN)' $(MAKEFILE_LIST)
 
-.PHONY: build-mcp test lint type format format-check manual-test clean security-scan vulnerability-scan license-check docker-scan sbom all-scans
+.PHONY: build-mcp test live-test lint type format format-check manual-test clean security-scan vulnerability-scan license-check docker-scan sbom all-scans
 
 build-mcp:	##@Docker Build clockodo-mcp:latest image
 	docker build -t clockodo-mcp:latest .
 
 test:	##@Testing Run pytest with coverage in container
 	docker compose -f docker-compose.test.yml run --rm test
+
+LIVE_IMAGE := clockodo-mcp-live-test
+
+live-test:	##@Testing Run the live QA suite against a Clockodo TEST company (needs manual-test/.env.live)
+	@test -f manual-test/.env.live || { echo "manual-test/.env.live missing: copy manual-test/.env.live.template and fill it in (trial company only!)"; exit 1; }
+	docker build -q -f Dockerfile.dev -t $(LIVE_IMAGE) .
+	docker run --rm --env-file manual-test/.env.live -v "$(PWD):/app:ro" -w /app \
+		-e PYTHONPATH=/app/src -e PYTHONDONTWRITEBYTECODE=1 \
+		$(LIVE_IMAGE) python manual-test/live_test.py
 
 lint:	##@Code-Quality Run pylint, ruff, and isort check in container
 	docker compose -f docker-compose.test.yml run --rm lint sh -c "pylint src/clockodo_mcp tests && ruff check --no-cache src tests && isort --check-only src tests"

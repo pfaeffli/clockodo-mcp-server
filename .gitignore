@@ -3,6 +3,8 @@
 /tests/.junit.xml
 /template-pp/
 /.env
+/.env.demo
+/manual-test/.env.live
 __pycache__/
 *.pyc
 
