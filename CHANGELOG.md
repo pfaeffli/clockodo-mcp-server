@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `make live-test`: live end-to-end QA suite (`manual-test/live_test.py`) against a Clockodo trial company, with regression assertions for the 0.8.0 review fixes.
+
 ## [0.8.0] - 2026-10-04
 
 ### Breaking

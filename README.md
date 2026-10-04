@@ -474,6 +474,8 @@ Open `http://localhost:8888` and navigate to `work/manual-test/test_clockodo.ipy
 
 See [manual-test/JUPYTER_TESTING.md](manual-test/JUPYTER_TESTING.md) for detailed instructions.
 
+A live end-to-end QA suite against a Clockodo **trial** company is available via `make live-test`; see [manual-test/LIVE_TESTS.md](manual-test/LIVE_TESTS.md) (it writes and deletes data, never use production).
+
 ## Project Structure
 
 ```
